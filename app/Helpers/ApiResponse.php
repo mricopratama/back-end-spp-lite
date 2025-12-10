@@ -6,10 +6,8 @@ class ApiResponse
 {
     /**
      * Success response dengan format meta + data
-     * 
-     * @param mixed $data
-     * @param string $message
-     * @param int $code
+     *
+     * @param  mixed  $data
      * @return \Illuminate\Http\JsonResponse
      */
     public static function success($data = null, string $message = 'Success', int $code = 200)
@@ -26,10 +24,8 @@ class ApiResponse
 
     /**
      * Error response dengan format meta + data
-     * 
-     * @param string $message
-     * @param int $code
-     * @param mixed $errors
+     *
+     * @param  mixed  $errors
      * @return \Illuminate\Http\JsonResponse
      */
     public static function error(string $message = 'Error', int $code = 400, $errors = null)

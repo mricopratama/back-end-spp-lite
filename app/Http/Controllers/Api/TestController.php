@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 
 class TestController extends Controller
 {
