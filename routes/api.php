@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\AcademicYearController;
+use App\Http\Controllers\API\ClassController;
+use App\Http\Controllers\API\FeeCategoryController;
 
 // Test endpoint
 Route::get('/ping', [App\Http\Controllers\Api\TestController::class, 'ping']);
@@ -21,17 +24,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/change-password', [AuthController::class, 'changePassword']);
     });
 
-    // Master Data routes
-    Route::prefix('academic-years')->group(function () {
-        // Will be implemented in next commits
-    });
-
-    Route::prefix('classes')->group(function () {
-        // Will be implemented in next commits
-    });
-
-    Route::prefix('fee-categories')->group(function () {
-        // Will be implemented in next commits
+    // Master Data routes (Admin only)
+    Route::middleware('role:admin')->group(function () {
+        Route::apiResource('academic-years', AcademicYearController::class);
+        Route::apiResource('classes', ClassController::class);
+        Route::apiResource('fee-categories', FeeCategoryController::class);
     });
 
     // Student routes
