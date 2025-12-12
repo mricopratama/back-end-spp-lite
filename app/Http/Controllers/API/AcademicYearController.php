@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AcademicYearRequest;
 use App\Models\AcademicYear;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AcademicYearController extends Controller
 {
@@ -39,6 +40,7 @@ class AcademicYearController extends Controller
             return ApiResponse::success($academicYear, 'Academic year created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Failed to create academic year: ' . $e->getMessage());
             return ApiResponse::error('Failed to create academic year', 500);
         }
     }
@@ -85,6 +87,7 @@ class AcademicYearController extends Controller
             return ApiResponse::success($academicYear, 'Academic year updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Failed to update academic year: ' . $e->getMessage());
             return ApiResponse::error('Failed to update academic year', 500);
         }
     }
