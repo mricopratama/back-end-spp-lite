@@ -1,14 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\AuthController;
 
 // Test endpoint
 Route::get('/ping', [App\Http\Controllers\Api\TestController::class, 'ping']);
 
 // Public routes (no auth)
 Route::prefix('auth')->group(function () {
-    // Login endpoint (akan dibuat di commit berikutnya)
-    // Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login']);
 });
 
 // Protected routes (require auth:sanctum)
@@ -16,8 +16,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Auth routes
     Route::prefix('auth')->group(function () {
-        // Route::get('/me', [AuthController::class, 'me']);
-        // Route::put('/change-password', [AuthController::class, 'changePassword']);
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::put('/change-password', [AuthController::class, 'changePassword']);
     });
 
     // Master Data routes

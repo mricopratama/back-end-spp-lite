@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('full_name');
             $table->text('address')->nullable();
             $table->enum('status', ['active', 'inactive', 'graduated', 'dropped'])->default('active');
+            $table->decimal('spp_base_fee', 12, 2)->default(0);
             $table->timestamps();
         });
     }
