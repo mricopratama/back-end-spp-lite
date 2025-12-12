@@ -8,7 +8,6 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -68,18 +67,17 @@ class AuthController extends Controller
 
         // Include student details if user is a student
         if ($user->role->name === 'student' && $user->student) {
-            // Get current class information
-            $currentClassHistory = DB::table('student_class_history')
-                ->join('classes', 'student_class_history.class_id', '=', 'classes.id')
-                ->join('academic_years', 'student_class_history.academic_year_id', '=', 'academic_years.id')
-                ->where('student_class_history.student_id', $user->student->id)
-                ->where('academic_years.is_active', true)
-                ->select('classes.name as class_name')
+            // Get current class information using Eloquent relationships
+            $currentClassHistory = $user->student->classHistories()
+                ->whereHas('academicYear', function ($query) {
+                    $query->where('is_active', true);
+                })
+                ->with(['class', 'academicYear'])
                 ->first();
 
             $userData['student_detail'] = [
                 'nis' => $user->student->nis,
-                'class_name' => $currentClassHistory->class_name ?? null,
+                'class_name' => $currentClassHistory?->class->name,
                 'status' => strtoupper($user->student->status),
             ];
         }

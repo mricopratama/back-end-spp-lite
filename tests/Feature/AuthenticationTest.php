@@ -153,13 +153,11 @@ class AuthenticationTest extends TestCase
             'level' => '1',
         ]);
 
-        // Add student to class
-        \DB::table('student_class_history')->insert([
+        // Add student to class using StudentClassHistory model
+        \App\Models\StudentClassHistory::create([
             'student_id' => $student->id,
             'class_id' => $class->id,
             'academic_year_id' => $academicYear->id,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         // Create user for student
