@@ -13,6 +13,7 @@ class FeeCategory extends Model
     protected $fillable = [
         'name',
         'default_amount',
+        'description',
     ];
 
     protected $casts = [
