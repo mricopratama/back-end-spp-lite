@@ -15,6 +15,7 @@ class Student extends Model
         'nis',
         'full_name',
         'address',
+        'phone_number',
         'status',
         'spp_base_fee',
     ];
@@ -37,6 +38,29 @@ class Student extends Model
     public function classHistories(): HasMany
     {
         return $this->hasMany(StudentClassHistory::class);
+    }
+
+    /**
+     * Alias for classHistories
+     */
+    public function classHistory(): HasMany
+    {
+        return $this->hasMany(StudentClassHistory::class);
+    }
+
+    /**
+     * Get current class (from most recent academic year)
+     */
+    public function currentClass()
+    {
+        return $this->hasOneThrough(
+            Classes::class,
+            StudentClassHistory::class,
+            'student_id',
+            'id',
+            'id',
+            'class_id'
+        )->latest('student_class_history.academic_year_id');
     }
 
     /**

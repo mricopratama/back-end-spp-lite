@@ -1,0 +1,2307 @@
+{
+	"info": {
+		"_postman_id": "97f31a26-2bd6-4d10-8c74-c5972eeb022f",
+		"name": "SPP-Lite API Project",
+		"description": "Dokumentasi API lengkap untuk aplikasi SPP-Lite.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44566299",
+		"_collection_link": "https://ricopratama-5538265.postman.co/workspace/Rico-Pratama's-Workspace~204feb71-3ff3-4163-8760-3d8c26d324cc/collection/44566299-97f31a26-2bd6-4d10-8c74-c5972eeb022f?action=share&source=collection_link&creator=44566299"
+	},
+	"item": [
+		{
+			"name": "01. Modul Auth",
+			"item": [
+				{
+					"name": "Login (Get Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse JSON Response",
+									"var jsonData = pm.response.json();",
+									"",
+									"// Cek jika login sukses (HTTP 200)",
+									"if (pm.response.code === 200) {",
+									"    // Simpan token ke environment variable 'admin_token'",
+									"    pm.environment.set(\"admin_token\", jsonData.data.token);",
+									"    console.log(\"✅ Token Admin berhasil disimpan!\");",
+									"}",
+									"",
+									"// Validasi standar",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{admin_username}}\",\n    \"password\": \"{{admin_password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login user (Admin/Siswa). Jika sukses, token otomatis disimpan ke environment."
+					},
+					"response": [
+						{
+							"name": "Success Login (Admin)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"password\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Login successful\"\n    },\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"user\": {\n            \"id\": 1,\n            \"username\": \"admin\",\n            \"full_name\": \"Administrator Sekolah\",\n            \"role\": \"admin\",\n            \"student_id\": null\n        }\n    }\n}"
+						},
+						{
+							"name": "Failed (Invalid Credentials)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"wrongpass\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 401,\n        \"status\": \"error\",\n        \"message\": \"Invalid username or password\"\n    },\n    \"data\": null\n}"
+						}
+					]
+				},
+				{
+					"name": "Get My Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Mengambil data user login. Membutuhkan Bearer Token."
+					},
+					"response": [
+						{
+							"name": "Success Profile (Student)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/auth/me",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"me"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"User profile fetched\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"username\": \"1001\",\n        \"full_name\": \"Budi Santoso\",\n        \"role\": \"student\",\n        \"student_id\": 105,\n        \"student_detail\": {\n            \"nis\": \"1001\",\n            \"class_name\": \"X-IPA-1\",\n            \"status\": \"ACTIVE\"\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"old_password\": \"password\",\n    \"new_password\": \"newpass123\",\n    \"new_password_confirmation\": \"newpass123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/change-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Ganti password user sendiri."
+					},
+					"response": [
+						{
+							"name": "Success Change Password",
+							"originalRequest": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{admin_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"old_password\": \"password\",\n    \"new_password\": \"newpass123\",\n    \"new_password_confirmation\": \"newpass123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/change-password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"change-password"
+									]
+								},
+								"description": "Ganti password user sendiri."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Password changed successfully\"\n    },\n    \"data\": null\n}"
+						}
+					]
+				}
+			],
+			"description": "Folder Modul Autentikasi"
+		},
+		{
+			"name": "02. Modul Master Data",
+			"item": [
+				{
+					"name": "A. Academic Years",
+					"item": [
+						{
+							"name": "1. List Academic Years",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/academic-years",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/academic-years",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of academic years\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"2023/2024\",\n            \"is_active\": false\n        },\n        {\n            \"id\": 2,\n            \"name\": \"2024/2025\",\n            \"is_active\": true\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Academic Year",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    if(jsonData.data.is_active === true) {",
+											"        pm.environment.set(\"active_academic_year_id\", jsonData.data.id);",
+											"        console.log(\"✅ Active Year ID Saved: \" + jsonData.data.id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"2024/2025\",\n    \"is_active\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/academic-years",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create (Active)",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"2024/2025\",\n    \"is_active\": true\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/academic-years",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Academic year created\"\n    },\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"2024/2025\",\n        \"is_active\": true,\n        \"created_at\": \"2024-06-01T10:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Update Academic Year",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"2024/2025 Revised\",\n    \"is_active\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years",
+										"{{active_academic_year_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Update",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"2024/2025 Revised\",\n    \"is_active\": true\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years",
+												"{{active_academic_year_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Academic year updated\"\n    },\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"2024/2025 Revised\",\n        \"is_active\": true\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Delete Academic Year",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years",
+										"{{active_academic_year_id}}"
+									]
+								},
+								"description": "Menghapus tahun ajaran. Backend harus menolak jika data ini sudah dipakai di history siswa."
+							},
+							"response": [
+								{
+									"name": "Success Delete",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years",
+												"{{active_academic_year_id}}"
+											]
+										},
+										"description": "Menghapus tahun ajaran. Backend harus menolak jika data ini sudah dipakai di history siswa."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Academic year deleted\"\n    },\n    \"data\": null\n}"
+								},
+								{
+									"name": "Failed (Foreign Key Constraint)",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years",
+												"{{active_academic_year_id}}"
+											]
+										},
+										"description": "Menghapus tahun ajaran. Backend harus menolak jika data ini sudah dipakai di history siswa."
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 400,\n        \"status\": \"error\",\n        \"message\": \"Cannot delete active academic year or data is in use.\"\n    },\n    \"data\": null\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "B. Classes",
+					"item": [
+						{
+							"name": "1. List Classes",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/classes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/classes",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of classes\"\n    },\n    \"data\": [\n        {\n            \"id\": 10,\n            \"name\": \"X-IPA-1\",\n            \"level\": 10\n        },\n        {\n            \"id\": 11,\n            \"name\": \"XI-IPS-2\",\n            \"level\": 11\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Class",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    pm.environment.set(\"saved_class_id\", jsonData.data.id);",
+											"    console.log(\"✅ Class ID Saved: \" + jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"X-IPA-1\",\n    \"level\": 10\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/classes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"X-IPA-1\",\n    \"level\": 10\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/classes",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Class created\"\n    },\n    \"data\": {\n        \"id\": 10,\n        \"name\": \"X-IPA-1\",\n        \"level\": 10,\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Update Class",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"X-IPA-Unggulan\",\n    \"level\": 10\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/classes/{{saved_class_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes",
+										"{{saved_class_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Update",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"X-IPA-Unggulan\",\n    \"level\": 10\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/classes/{{saved_class_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes",
+												"{{saved_class_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Class updated\"\n    },\n    \"data\": {\n        \"id\": 10,\n        \"name\": \"X-IPA-Unggulan\",\n        \"level\": 10\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Delete Class",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/classes/{{saved_class_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes",
+										"{{saved_class_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Delete",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/classes/{{saved_class_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes",
+												"{{saved_class_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Class deleted\"\n    },\n    \"data\": null\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "C. Fee Categories",
+					"item": [
+						{
+							"name": "1. List Fee Categories",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/fee-categories",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/fee-categories",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of fee categories\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"SPP Bulanan\",\n            \"default_amount\": 500000\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Uang Gedung\",\n            \"default_amount\": 2000000\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Fee Category",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    pm.environment.set(\"saved_fee_category_id\", jsonData.data.id);",
+											"    console.log(\"✅ Fee Category ID Saved: \" + jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"default_amount\": 500000\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/fee-categories",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"default_amount\": 500000\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/fee-categories",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Fee category created\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan\",\n        \"default_amount\": 500000,\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Update Fee Category",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"default_amount\": 600000\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories",
+										"{{saved_fee_category_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Update",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"default_amount\": 600000\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories",
+												"{{saved_fee_category_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Fee category updated\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan (Naik)\",\n        \"default_amount\": 600000\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Delete Fee Category",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories",
+										"{{saved_fee_category_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Delete",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories",
+												"{{saved_fee_category_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Fee category deleted\"\n    },\n    \"data\": null\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "03. Modul Siswa",
+			"item": [
+				{
+					"name": "A. Student Data",
+					"item": [
+						{
+							"name": "1. List Students",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/students?status=ACTIVE",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "ACTIVE",
+											"description": "Filter by status"
+										},
+										{
+											"key": "class_id",
+											"value": "{{saved_class_id}}",
+											"description": "Optional: Filter by class",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/students?status=ACTIVE",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "ACTIVE",
+													"description": "Filter by status"
+												},
+												{
+													"key": "class_id",
+													"value": "{{saved_class_id}}",
+													"description": "Optional: Filter by class",
+													"disabled": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of students\"\n    },\n    \"data\": [\n        {\n            \"id\": 101,\n            \"nis\": \"2024001\",\n            \"full_name\": \"Ahmad Dahlan\",\n            \"status\": \"ACTIVE\",\n            \"current_class\": \"X-IPA-1\"\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Student (Single)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    // Simpan ID siswa baru ke environment",
+											"    pm.environment.set(\"saved_student_id\", jsonData.data.id);",
+											"    console.log(\"✅ Student ID Saved: \" + jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nis\": \"2024001\",\n    \"full_name\": \"Budi Santoso\",\n    \"address\": \"Jl. Sudirman No. 10\",\n    \"phone_number\": \"08123456789\",\n    \"status\": \"ACTIVE\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/students",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"nis\": \"2024001\",\n    \"full_name\": \"Budi Santoso\",\n    \"address\": \"Jl. Sudirman No. 10\",\n    \"phone_number\": \"08123456789\",\n    \"status\": \"ACTIVE\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/students",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Student created\"\n    },\n    \"data\": {\n        \"id\": 105,\n        \"nis\": \"2024001\",\n        \"full_name\": \"Budi Santoso\",\n        \"address\": \"Jl. Sudirman No. 10\",\n        \"status\": \"ACTIVE\",\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Show Student Detail",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/students/{{saved_student_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"{{saved_student_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Detail + History",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/students/{{saved_student_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"{{saved_student_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Student detail fetched\"\n    },\n    \"data\": {\n        \"id\": 105,\n        \"nis\": \"2024001\",\n        \"full_name\": \"Budi Santoso\",\n        \"status\": \"ACTIVE\",\n        \"class_history\": [\n            {\n                \"academic_year\": \"2024/2025\",\n                \"class_name\": \"X-IPA-1\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Import Students (Excel)",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"description": "Upload file .xlsx / .csv di sini",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/students/import",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"import"
+									]
+								},
+								"description": "Upload file Excel untuk input massal. Gunakan template yang disediakan."
+							},
+							"response": [
+								{
+									"name": "Success Import",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "formdata",
+											"formdata": [
+												{
+													"key": "file",
+													"description": "Upload file .xlsx / .csv di sini",
+													"type": "file",
+													"src": []
+												}
+											]
+										},
+										"url": {
+											"raw": "{{base_url}}/students/import",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"import"
+											]
+										},
+										"description": "Upload file Excel untuk input massal. Gunakan template yang disediakan."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Import successful. 48 rows inserted.\"\n    },\n    \"data\": {\n        \"total_rows\": 50,\n        \"inserted\": 48,\n        \"failed\": 2,\n        \"errors\": [\n            \"Row 5: NIS already exists\",\n            \"Row 10: Class 'XYZ' not found\"\n        ]\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "B. Academic History",
+					"item": [
+						{
+							"name": "1. Set Class / Promote",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"student_id\": {{saved_student_id}},\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/students/set-class",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"set-class"
+									]
+								},
+								"description": "Mendaftarkan siswa ke kelas tertentu di tahun ajaran aktif. Logic: Insert ke student_class_history."
+							},
+							"response": [
+								{
+									"name": "Success Set Class",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"student_id\": {{saved_student_id}},\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}}\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/students/set-class",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"set-class"
+											]
+										},
+										"description": "Mendaftarkan siswa ke kelas tertentu di tahun ajaran aktif. Logic: Insert ke student_class_history."
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Student assigned to class\"\n    },\n    \"data\": {\n        \"history_id\": 55,\n        \"student_name\": \"Budi Santoso\",\n        \"class_name\": \"X-IPA-1\",\n        \"academic_year\": \"2024/2025\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "C. Student Account",
+					"item": [
+						{
+							"name": "1. Generate User Account",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/students/{{saved_student_id}}/create-user",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"{{saved_student_id}}",
+										"create-user"
+									]
+								},
+								"description": "Otomatis membuat user login untuk siswa. Username = NIS, Password Default = 123456."
+							},
+							"response": [
+								{
+									"name": "Success Generate",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/students/{{saved_student_id}}/create-user",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"{{saved_student_id}}",
+												"create-user"
+											]
+										},
+										"description": "Otomatis membuat user login untuk siswa. Username = NIS, Password Default = 123456."
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"User account created\"\n    },\n    \"data\": {\n        \"user_id\": 20,\n        \"username\": \"2024001\",\n        \"role\": \"student\"\n    }\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "04. Modul Tagihan (Invoicing)",
+			"item": [
+				{
+					"name": "1. Create Invoice (Single)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"    // PENTING: Simpan ID Invoice untuk tes pembayaran nanti",
+									"    pm.environment.set(\"saved_invoice_id\", jsonData.data.id);",
+									"    console.log(\"✅ Invoice ID Saved: \" + jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"student_id\": {{saved_student_id}},\n    \"academic_year_id\": {{active_academic_year_id}},\n    \"due_date\": \"2024-02-20\",\n    \"items\": [\n        {\n            \"fee_category_id\": {{saved_fee_category_id}},\n            \"description\": \"SPP Februari 2024\" \n            // Backend otomatis ambil harga dari Master Fee (Snapshot)\n        },\n        {\n            \"fee_category_id\": {{saved_fee_category_id}},\n            \"description\": \"Denda Keterlambatan (Custom)\",\n            \"custom_amount\": 25000 \n            // Contoh jika Admin override harga manual\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices"
+							]
+						},
+						"description": "Membuat tagihan untuk 1 siswa. \nLogic Backend: Loop items, copy harga dari fee_categories, hitung total_amount."
+					},
+					"response": [
+						{
+							"name": "Success Create",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"student_id\": {{saved_student_id}},\n    \"academic_year_id\": {{active_academic_year_id}},\n    \"due_date\": \"2024-02-20\",\n    \"items\": [\n        {\n            \"fee_category_id\": {{saved_fee_category_id}},\n            \"description\": \"SPP Februari 2024\" \n            // Backend otomatis ambil harga dari Master Fee (Snapshot)\n        },\n        {\n            \"fee_category_id\": {{saved_fee_category_id}},\n            \"description\": \"Denda Keterlambatan (Custom)\",\n            \"custom_amount\": 25000 \n            // Contoh jika Admin override harga manual\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/invoices",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices"
+									]
+								},
+								"description": "Membuat tagihan untuk 1 siswa. \nLogic Backend: Loop items, copy harga dari fee_categories, hitung total_amount."
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Invoice generated successfully\"\n    },\n    \"data\": {\n        \"id\": 501,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"student_name\": \"Budi Santoso\",\n        \"total_amount\": 525000,\n        \"status\": \"UNPAID\",\n        \"items_count\": 2\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "2. Create Invoice (Bulk / Massal)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}},\n    \"due_date\": \"2024-03-20\",\n    \"items\": [\n        {\n            \"fee_category_id\": {{saved_fee_category_id}}\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/invoices/bulk",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"bulk"
+							]
+						},
+						"description": "Generate tagihan untuk SEMUA siswa di kelas tertentu. Gunakan Queue Job di backend jika siswa > 100."
+					},
+					"response": [
+						{
+							"name": "Success Bulk Create",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}},\n    \"due_date\": \"2024-03-20\",\n    \"items\": [\n        {\n            \"fee_category_id\": {{saved_fee_category_id}}\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/invoices/bulk",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"bulk"
+									]
+								},
+								"description": "Generate tagihan untuk SEMUA siswa di kelas tertentu. Gunakan Queue Job di backend jika siswa > 100."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Bulk invoice generation started\"\n    },\n    \"data\": {\n        \"processed_count\": 32,\n        \"class_target\": \"X-IPA-1\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "3. Get Invoice Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"{{saved_invoice_id}}"
+							]
+						},
+						"description": "Melihat detail Header + Items + History Pembayaran."
+					},
+					"response": [
+						{
+							"name": "Success Detail",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"{{saved_invoice_id}}"
+									]
+								},
+								"description": "Melihat detail Header + Items + History Pembayaran."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Invoice detail fetched\"\n    },\n    \"data\": {\n        \"id\": 501,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"status\": \"UNPAID\",\n        \"total_amount\": 525000,\n        \"paid_amount\": 0,\n        \"items\": [\n            {\n                \"id\": 1,\n                \"description\": \"SPP Februari 2024\",\n                \"amount\": 500000\n            },\n            {\n                \"id\": 2,\n                \"description\": \"Denda Keterlambatan (Custom)\",\n                \"amount\": 25000\n            }\n        ],\n        \"payments\": []\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "4. List My Invoices (Siswa)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{student_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invoices/my?status=UNPAID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"my"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "UNPAID",
+									"description": "Filter: UNPAID, PAID, PARTIAL"
+								}
+							]
+						},
+						"description": "Endpoint khusus Siswa. Menggunakan Student Token."
+					},
+					"response": [
+						{
+							"name": "Success List (My)",
+							"originalRequest": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{student_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/my?status=UNPAID",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"my"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "UNPAID",
+											"description": "Filter: UNPAID, PAID, PARTIAL"
+										}
+									]
+								},
+								"description": "Endpoint khusus Siswa. Menggunakan Student Token."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"My invoices fetched\"\n    },\n    \"data\": [\n        {\n            \"id\": 501,\n            \"invoice_number\": \"INV/2024/02/001\",\n            \"total_amount\": 525000,\n            \"status\": \"UNPAID\",\n            \"due_date\": \"2024-02-20\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "5. Delete Invoice (Void)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"{{saved_invoice_id}}"
+							]
+						},
+						"description": "Menghapus tagihan. Syarat: paid_amount harus 0 (Belum ada pembayaran)."
+					},
+					"response": [
+						{
+							"name": "Success Delete",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"{{saved_invoice_id}}"
+									]
+								},
+								"description": "Menghapus tagihan. Syarat: paid_amount harus 0 (Belum ada pembayaran)."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Invoice deleted successfully\"\n    },\n    \"data\": null\n}"
+						},
+						{
+							"name": "Failed (Already Paid)",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"{{saved_invoice_id}}"
+									]
+								},
+								"description": "Menghapus tagihan. Syarat: paid_amount harus 0 (Belum ada pembayaran)."
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 400,\n        \"status\": \"error\",\n        \"message\": \"Cannot delete invoice with existing payments.\"\n    },\n    \"data\": null\n}"
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "05. Modul Pembayaran (Payment)",
+			"item": [
+				{
+					"name": "1. Create Payment (Cicilan/Partial)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"    // Simpan ID pembayaran ini untuk tes Cetak/Void nanti",
+									"    pm.environment.set(\"saved_payment_id\", jsonData.data.id);",
+									"    console.log(\"✅ Payment ID Saved: \" + jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"invoice_id\": {{saved_invoice_id}},\n    \"amount\": 200000,\n    \"payment_method\": \"CASH\",\n    \"notes\": \"Titipan via Wali Kelas\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/payments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments"
+							]
+						},
+						"description": "Menginput pembayaran. \nLogic Backend: \n1. Insert Payment.\n2. Update Invoice.paid_amount += 200.000\n3. Cek sisa hutang. Jika > 0, set status 'PARTIAL'."
+					},
+					"response": [
+						{
+							"name": "Success Partial Payment",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"invoice_id\": {{saved_invoice_id}},\n    \"amount\": 200000,\n    \"payment_method\": \"CASH\",\n    \"notes\": \"Titipan via Wali Kelas\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/payments",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments"
+									]
+								},
+								"description": "Menginput pembayaran. \nLogic Backend: \n1. Insert Payment.\n2. Update Invoice.paid_amount += 200.000\n3. Cek sisa hutang. Jika > 0, set status 'PARTIAL'."
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Payment accepted\"\n    },\n    \"data\": {\n        \"id\": 801,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"amount_paid\": 200000,\n        \"payment_method\": \"CASH\",\n        \"invoice_status\": \"PARTIAL\",\n        \"remaining_balance\": 325000\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "2. Create Payment (Pelunasan/Full)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"invoice_id\": {{saved_invoice_id}},\n    \"amount\": 325000,\n    \"payment_method\": \"TRANSFER\",\n    \"notes\": \"Lunas\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/payments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments"
+							]
+						},
+						"description": "Membayar sisa tagihan.\nLogic Backend: Status Invoice harus berubah otomatis jadi 'PAID'."
+					},
+					"response": [
+						{
+							"name": "Success Full Payment",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"invoice_id\": {{saved_invoice_id}},\n    \"amount\": 325000,\n    \"payment_method\": \"TRANSFER\",\n    \"notes\": \"Lunas\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/payments",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments"
+									]
+								},
+								"description": "Membayar sisa tagihan.\nLogic Backend: Status Invoice harus berubah otomatis jadi 'PAID'."
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Payment accepted. Invoice is fully paid.\"\n    },\n    \"data\": {\n        \"id\": 802,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"amount_paid\": 325000,\n        \"payment_method\": \"TRANSFER\",\n        \"invoice_status\": \"PAID\",\n        \"remaining_balance\": 0\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "3. Print Receipt (Kwitansi)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/{{saved_payment_id}}/print",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"{{saved_payment_id}}",
+								"print"
+							]
+						},
+						"description": "Download PDF bukti pembayaran spesifik (Struk Kecil)."
+					},
+					"response": [
+						{
+							"name": "Success Print (PDF)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/payments/{{saved_payment_id}}/print",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments",
+										"{{saved_payment_id}}",
+										"print"
+									]
+								},
+								"description": "Download PDF bukti pembayaran spesifik (Struk Kecil)."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/pdf"
+								}
+							],
+							"cookie": [],
+							"body": "%PDF-1.4 ... (Binary Data) ..."
+						}
+					]
+				},
+				{
+					"name": "4. Delete Payment (Void)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/{{saved_payment_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"{{saved_payment_id}}"
+							]
+						},
+						"description": "Membatalkan pembayaran. \nLogic Backend: \n1. Soft Delete Payment.\n2. Kurangi Invoice.paid_amount.\n3. Kembalikan status invoice ke PARTIAL/UNPAID."
+					},
+					"response": [
+						{
+							"name": "Success Void",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/payments/{{saved_payment_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments",
+										"{{saved_payment_id}}"
+									]
+								},
+								"description": "Membatalkan pembayaran. \nLogic Backend: \n1. Soft Delete Payment.\n2. Kurangi Invoice.paid_amount.\n3. Kembalikan status invoice ke PARTIAL/UNPAID."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Payment voided/deleted successfully\"\n    },\n    \"data\": {\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"current_paid_amount\": 200000,\n        \"invoice_status\": \"PARTIAL\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "5. History Pembayaran (Log)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/history?start_date=2024-01-01&end_date=2024-12-31",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"history"
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "end_date",
+									"value": "2024-12-31"
+								}
+							]
+						},
+						"description": "Laporan uang masuk harian (rekap)."
+					},
+					"response": [
+						{
+							"name": "Success History",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/payments/history?start_date=2024-01-01&end_date=2024-12-31",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments",
+										"history"
+									],
+									"query": [
+										{
+											"key": "start_date",
+											"value": "2024-01-01"
+										},
+										{
+											"key": "end_date",
+											"value": "2024-12-31"
+										}
+									]
+								},
+								"description": "Laporan uang masuk harian (rekap)."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Payment history fetched\"\n    },\n    \"data\": [\n        {\n            \"id\": 801,\n            \"date\": \"2024-02-10\",\n            \"student_name\": \"Budi Santoso\",\n            \"amount\": 200000,\n            \"method\": \"CASH\",\n            \"processed_by\": \"Admin\"\n        }\n    ]\n}"
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "06. Modul Laporan & Dashboard",
+			"item": [
+				{
+					"name": "A. Dashboard",
+					"item": [
+						{
+							"name": "1. Admin Dashboard Stats",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/dashboard/admin",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"dashboard",
+										"admin"
+									]
+								},
+								"description": "Menampilkan ringkasan statistik untuk Home Admin. \nLogic: \n- total_income_today: Sum payments where date = today.\n- active_students_count: Count students where status = ACTIVE.\n- paid_percentage: (Count Paid Invoices / Total Invoices) * 100."
+							},
+							"response": [
+								{
+									"name": "Success Admin Stats",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/dashboard/admin",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"dashboard",
+												"admin"
+											]
+										},
+										"description": "Menampilkan ringkasan statistik untuk Home Admin. \nLogic: \n- total_income_today: Sum payments where date = today.\n- active_students_count: Count students where status = ACTIVE.\n- paid_percentage: (Count Paid Invoices / Total Invoices) * 100."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Dashboard stats fetched\"\n    },\n    \"data\": {\n        \"total_income_today\": 1500000,\n        \"total_income_month\": 45000000,\n        \"active_students_count\": 350,\n        \"paid_invoice_percentage\": 75.5,\n        \"recent_payments\": [\n            {\n                \"student\": \"Budi\",\n                \"amount\": 100000,\n                \"time\": \"10:05\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Student Dashboard Stats",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{student_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/dashboard/student",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"dashboard",
+										"student"
+									]
+								},
+								"description": "Ringkasan khusus untuk Siswa/Wali Murid. \nMenampilkan total hutang yang harus dibayar."
+							},
+							"response": [
+								{
+									"name": "Success Student Stats",
+									"originalRequest": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{student_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/dashboard/student",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"dashboard",
+												"student"
+											]
+										},
+										"description": "Ringkasan khusus untuk Siswa/Wali Murid. \nMenampilkan total hutang yang harus dibayar."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Student stats fetched\"\n    },\n    \"data\": {\n        \"student_name\": \"Budi Santoso\",\n        \"class_name\": \"X-IPA-1\",\n        \"total_outstanding_amount\": 450000,\n        \"unpaid_invoices_count\": 2,\n        \"last_payment_date\": \"2024-02-15\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "B. Reports (Laporan)",
+					"item": [
+						{
+							"name": "1. Laporan Tunggakan (Arrears)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/reports/arrears?class_id={{saved_class_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"reports",
+										"arrears"
+									],
+									"query": [
+										{
+											"key": "class_id",
+											"value": "{{saved_class_id}}",
+											"description": "Filter per kelas"
+										},
+										{
+											"key": "academic_year_id",
+											"value": "{{active_academic_year_id}}",
+											"description": "Filter tahun ajaran",
+											"disabled": true
+										}
+									]
+								},
+								"description": "List siswa yang belum lunas (Invoice status != PAID). \nOutput biasanya untuk dicetak/Excel."
+							},
+							"response": [
+								{
+									"name": "Success Arrears",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/reports/arrears?class_id={{saved_class_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"reports",
+												"arrears"
+											],
+											"query": [
+												{
+													"key": "class_id",
+													"value": "{{saved_class_id}}",
+													"description": "Filter per kelas"
+												},
+												{
+													"key": "academic_year_id",
+													"value": "{{active_academic_year_id}}",
+													"description": "Filter tahun ajaran",
+													"disabled": true
+												}
+											]
+										},
+										"description": "List siswa yang belum lunas (Invoice status != PAID). \nOutput biasanya untuk dicetak/Excel."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Arrears report fetched\"\n    },\n    \"data\": [\n        {\n            \"student_name\": \"Budi Santoso\",\n            \"class\": \"X-IPA-1\",\n            \"total_debt\": 450000,\n            \"details\": [\n                \"SPP Februari (Sisa 200rb)\",\n                \"Uang Gedung (Sisa 250rb)\"\n            ]\n        },\n        {\n            \"student_name\": \"Ani\",\n            \"class\": \"X-IPA-1\",\n            \"total_debt\": 100000,\n            \"details\": [\n                \"SPP Februari (Sisa 100rb)\"\n            ]\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Laporan Pendapatan (Income)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/reports/income?start_date=2024-02-01&end_date=2024-02-29",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"reports",
+										"income"
+									],
+									"query": [
+										{
+											"key": "start_date",
+											"value": "2024-02-01",
+											"description": "Tanggal Awal"
+										},
+										{
+											"key": "end_date",
+											"value": "2024-02-29",
+											"description": "Tanggal Akhir"
+										}
+									]
+								},
+								"description": "Rekap uang masuk real (Berdasarkan tabel Payments). \nBisa dikelompokkan per kategori pembayaran (Cash/Transfer)."
+							},
+							"response": [
+								{
+									"name": "Success Income",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/reports/income?start_date=2024-02-01&end_date=2024-02-29",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"reports",
+												"income"
+											],
+											"query": [
+												{
+													"key": "start_date",
+													"value": "2024-02-01",
+													"description": "Tanggal Awal"
+												},
+												{
+													"key": "end_date",
+													"value": "2024-02-29",
+													"description": "Tanggal Akhir"
+												}
+											]
+										},
+										"description": "Rekap uang masuk real (Berdasarkan tabel Payments). \nBisa dikelompokkan per kategori pembayaran (Cash/Transfer)."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Income report fetched\"\n    },\n    \"data\": {\n        \"period\": \"01 Feb 2024 - 29 Feb 2024\",\n        \"total_income\": 50000000,\n        \"breakdown_by_method\": {\n            \"CASH\": 15000000,\n            \"TRANSFER\": 35000000\n        },\n        \"daily_income\": [\n            {\n                \"date\": \"2024-02-01\",\n                \"amount\": 2500000\n            },\n             {\n                \"date\": \"2024-02-02\",\n                \"amount\": 1000000\n            }\n        ]\n    }\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		}
+	]
+}

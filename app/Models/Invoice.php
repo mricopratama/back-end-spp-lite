@@ -53,6 +53,14 @@ class Invoice extends Model
     }
 
     /**
+     * Alias for invoiceItems
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
+
+    /**
      * Get all payments for this invoice.
      */
     public function payments(): HasMany
