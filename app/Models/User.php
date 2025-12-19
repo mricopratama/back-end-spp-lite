@@ -81,4 +81,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Payment::class, 'processed_by');
     }
+
+    /**
+     * Get all notifications for this user.
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

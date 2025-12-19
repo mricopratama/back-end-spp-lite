@@ -7,6 +7,8 @@ use App\Http\Controllers\API\ClassController;
 use App\Http\Controllers\API\FeeCategoryController;
 use App\Http\Controllers\API\StudentController;
 use App\Http\Controllers\API\InvoiceController;
+use App\Http\Controllers\API\PaymentController;
+use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\ReportController;
 
@@ -48,6 +50,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/bulk-promote', [StudentController::class, 'bulkPromote'])->middleware('role:admin');
         Route::post('/{student}/create-user', [StudentController::class, 'createUserAccount'])->middleware('role:admin');
         Route::post('/import', [StudentController::class, 'import'])->middleware('role:admin');
+
+        // SPP Card (Kartu SPP Digital)
+        Route::get('/{student}/spp-card', [StudentController::class, 'sppCard']); // SPP card for specific student
+        Route::get('/my/spp-card', [StudentController::class, 'mySppCard']); // My SPP card (Wali Murid)
     });
 
     // Invoice routes
@@ -59,6 +65,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{invoice}', [InvoiceController::class, 'show']); // Show invoice detail
         Route::delete('/{invoice}', [InvoiceController::class, 'destroy'])->middleware('role:admin'); // Delete invoice
         Route::post('/import', [InvoiceController::class, 'import'])->middleware('role:admin'); // Import from Excel
+    });
+
+    // Payment routes
+    Route::prefix('payments')->group(function () {
+        Route::get('/', [PaymentController::class, 'index']); // List payments
+        Route::post('/', [PaymentController::class, 'store'])->middleware('role:admin'); // Record payment (Admin only)
+        Route::get('/my', [PaymentController::class, 'myPayments']); // Student: my payment history
+        Route::get('/student/{studentId}', [PaymentController::class, 'studentHistory']); // Payment history by student
+        Route::get('/{payment}', [PaymentController::class, 'show']); // Show payment detail
+    });
+
+    // Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']); // List notifications
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']); // Get unread count
+        Route::put('/{notification}/read', [NotificationController::class, 'markAsRead']); // Mark as read
+        Route::put('/read-all', [NotificationController::class, 'markAllAsRead']); // Mark all as read
+        Route::delete('/{notification}', [NotificationController::class, 'destroy']); // Delete notification
     });
 
     // Dashboard routes

@@ -16,18 +16,26 @@ use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class StudentController extends Controller
 {
     /**
-     * Display a listing of students
+     * Display a listing of students with advanced filters and search
      */
     public function index(Request $request)
     {
         try {
-            $query = Student::query()->with(['currentClass', 'user']);
+            $query = Student::query();
+
+            // Optimize: Only load relationships if needed
+            $with = ['currentClass'];
+            if ($request->get('with_user', false)) {
+                $with[] = 'user';
+            }
+            $query->with($with);
 
             // Filter by status
             if ($request->has('status')) {
@@ -48,13 +56,43 @@ class StudentController extends Controller
                 });
             }
 
-            // Search by name or NIS
+            // Enhanced search: name, NIS, address, phone
             if ($request->has('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('full_name', 'like', "%{$search}%")
-                      ->orWhere('nis', 'like', "%{$search}%");
+                      ->orWhere('nis', 'like', "%{$search}%")
+                      ->orWhere('address', 'like', "%{$search}%")
+                      ->orWhere('phone_number', 'like', "%{$search}%");
                 });
+            }
+
+            // Filter by NIS only (exact match)
+            if ($request->has('nis')) {
+                $query->where('nis', $request->nis);
+            }
+
+            // Filter by name only
+            if ($request->has('name')) {
+                $query->where('full_name', 'like', "%{$request->name}%");
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'full_name');
+            $sortOrder = $request->get('sort_order', 'asc');
+
+            // Validate sort column
+            $allowedSorts = ['full_name', 'nis', 'status', 'created_at'];
+            if (in_array($sortBy, $allowedSorts)) {
+                $query->orderBy($sortBy, $sortOrder);
+            } else {
+                $query->orderBy('full_name', 'asc');
+            }
+
+            // Check if pagination is requested
+            if ($request->get('paginate', true) === 'false' || $request->get('paginate') === false) {
+                $students = $query->get();
+                return ApiResponse::success($students, 'List of students');
             }
 
             // Pagination
@@ -406,5 +444,157 @@ class StudentController extends Controller
         }
 
         return $username;
+    }
+
+    /**
+     * Get SPP Card (Kartu SPP Digital) for a student
+     * Shows monthly payment status with color indicators
+     */
+    public function sppCard($id, Request $request)
+    {
+        try {
+            $student = Student::with(['currentClass', 'user'])->findOrFail($id);
+
+            // Get academic year (default to active one if not specified)
+            $academicYearId = $request->get('academic_year_id');
+
+            if (!$academicYearId) {
+                $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+                $academicYearId = $activeYear ? $activeYear->id : null;
+            }
+
+            if (!$academicYearId) {
+                return ApiResponse::error('Academic year not found', 404);
+            }
+
+            $academicYear = \App\Models\AcademicYear::findOrFail($academicYearId);
+
+            // Get all invoices for this student in this academic year
+            $invoices = \App\Models\Invoice::with(['items.feeCategory', 'payments'])
+                ->where('student_id', $student->id)
+                ->where('academic_year_id', $academicYearId)
+                ->get();
+
+            // Prepare monthly status (assuming SPP is monthly)
+            // We'll extract month from due_date
+            $monthlyStatus = [];
+            $monthsMap = [
+                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            ];
+
+            // Group invoices by month (based on due_date)
+            foreach ($invoices as $invoice) {
+                $month = (int) date('n', strtotime($invoice->due_date));
+                $year = (int) date('Y', strtotime($invoice->due_date));
+
+                // Determine status and color
+                $status = $invoice->status;
+                $statusColor = 'red'; // default UNPAID
+
+                if ($status === 'PAID') {
+                    $statusColor = 'green';
+                } elseif ($status === 'PARTIAL') {
+                    $statusColor = 'yellow';
+                }
+
+                // Get payment date (if paid)
+                $paymentDate = null;
+                if ($invoice->payments->count() > 0) {
+                    $lastPayment = $invoice->payments->sortByDesc('payment_date')->first();
+                    $paymentDate = $lastPayment->payment_date;
+                }
+
+                // Calculate progress percentage
+                $progressPercentage = $invoice->total_amount > 0
+                    ? round(($invoice->paid_amount / $invoice->total_amount) * 100, 2)
+                    : 0;
+
+                $monthlyStatus[] = [
+                    'month' => $month,
+                    'month_name' => $monthsMap[$month],
+                    'year' => $year,
+                    'invoice_id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'amount' => (float) $invoice->total_amount,
+                    'paid_amount' => (float) $invoice->paid_amount,
+                    'remaining_amount' => (float) ($invoice->total_amount - $invoice->paid_amount),
+                    'status' => $status,
+                    'status_color' => $statusColor,
+                    'progress_percentage' => $progressPercentage,
+                    'due_date' => $invoice->due_date,
+                    'payment_date' => $paymentDate,
+                    'items' => $invoice->items->map(function ($item) {
+                        return [
+                            'category' => $item->feeCategory->name,
+                            'description' => $item->description,
+                            'amount' => (float) $item->amount,
+                        ];
+                    }),
+                ];
+            }
+
+            // Sort by month
+            usort($monthlyStatus, function ($a, $b) {
+                return $a['month'] <=> $b['month'];
+            });
+
+            // Calculate summary
+            $totalMonths = count($monthlyStatus);
+            $paidMonths = collect($monthlyStatus)->where('status', 'PAID')->count();
+            $partialMonths = collect($monthlyStatus)->where('status', 'PARTIAL')->count();
+            $unpaidMonths = collect($monthlyStatus)->where('status', 'UNPAID')->count();
+
+            $totalAmount = collect($monthlyStatus)->sum('amount');
+            $totalPaidAmount = collect($monthlyStatus)->sum('paid_amount');
+            $totalRemaining = $totalAmount - $totalPaidAmount;
+            $overallPercentage = $totalAmount > 0 ? round(($totalPaidAmount / $totalAmount) * 100, 2) : 0;
+
+            return ApiResponse::success([
+                'student' => [
+                    'id' => $student->id,
+                    'nis' => $student->nis,
+                    'full_name' => $student->full_name,
+                    'class' => $student->currentClass?->name ?? 'N/A',
+                ],
+                'academic_year' => [
+                    'id' => $academicYear->id,
+                    'name' => $academicYear->name,
+                ],
+                'monthly_status' => $monthlyStatus,
+                'summary' => [
+                    'total_months' => $totalMonths,
+                    'paid_months' => $paidMonths,
+                    'partial_months' => $partialMonths,
+                    'unpaid_months' => $unpaidMonths,
+                    'total_amount' => (float) $totalAmount,
+                    'paid_amount' => (float) $totalPaidAmount,
+                    'remaining' => (float) $totalRemaining,
+                    'percentage' => $overallPercentage,
+                ],
+            ], 'SPP Card fetched successfully');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to fetch SPP card: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get SPP Card for current logged in student (Wali Murid)
+     */
+    public function mySppCard(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // Check if user has student_id (is a student/wali murid)
+            if (!$user->student_id) {
+                return ApiResponse::error('User is not associated with a student', 403);
+            }
+
+            return $this->sppCard($user->student_id, $request);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to fetch SPP card: ' . $e->getMessage(), 500);
+        }
     }
 }

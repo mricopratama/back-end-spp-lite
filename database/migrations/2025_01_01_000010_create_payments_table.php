@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
+            $table->string('receipt_number')->unique();
             $table->decimal('amount', 12, 2)->default(0);
             $table->date('payment_date');
-            $table->string('payment_method');
+            $table->enum('payment_method', ['CASH', 'TRANSFER'])->default('CASH');
             $table->text('notes')->nullable();
             $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
             $table->foreignId('processed_by')->constrained('users')->cascadeOnDelete();
