@@ -28,13 +28,11 @@ class DashboardController extends Controller
             $monthEnd = now()->endOfMonth()->format('Y-m-d');
 
             // Total income today (from payments)
-            $totalIncomeToday = Payment::whereNull('deleted_at')
-                ->whereDate('payment_date', $today)
+            $totalIncomeToday = Payment::whereDate('payment_date', $today)
                 ->sum('amount');
 
             // Total income this month
-            $totalIncomeMonth = Payment::whereNull('deleted_at')
-                ->whereBetween('payment_date', [$monthStart, $monthEnd])
+            $totalIncomeMonth = Payment::whereBetween('payment_date', [$monthStart, $monthEnd])
                 ->sum('amount');
 
             // Active students count
@@ -51,7 +49,6 @@ class DashboardController extends Controller
 
             // Recent payments (last 10)
             $recentPayments = Payment::with(['invoice.student'])
-                ->whereNull('deleted_at')
                 ->orderBy('payment_date', 'desc')
                 ->limit(10)
                 ->get()
@@ -125,7 +122,6 @@ class DashboardController extends Controller
             $lastPayment = Payment::whereHas('invoice', function ($query) use ($student) {
                 $query->where('student_id', $student->id);
             })
-                ->whereNull('deleted_at')
                 ->orderBy('payment_date', 'desc')
                 ->first();
 
@@ -180,8 +176,7 @@ class DashboardController extends Controller
         try {
             $year = $request->get('year', date('Y'));
 
-            $monthlyData = Payment::whereNull('deleted_at')
-                ->whereYear('payment_date', $year)
+            $monthlyData = Payment::whereYear('payment_date', $year)
                 ->select(
                     DB::raw('MONTH(payment_date) as month'),
                     DB::raw('SUM(amount) as total')
@@ -220,8 +215,7 @@ class DashboardController extends Controller
             $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
             $endDate = $request->get('end_date', now()->endOfMonth()->format('Y-m-d'));
 
-            $breakdown = Payment::whereNull('deleted_at')
-                ->whereBetween('payment_date', [$startDate, $endDate])
+            $breakdown = Payment::whereBetween('payment_date', [$startDate, $endDate])
                 ->select('payment_method', DB::raw('SUM(amount) as total'))
                 ->groupBy('payment_method')
                 ->get()

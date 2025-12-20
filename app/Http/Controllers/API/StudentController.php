@@ -491,11 +491,11 @@ class StudentController extends Controller
 
                 // Determine status and color
                 $status = $invoice->status;
-                $statusColor = 'red'; // default UNPAID
+                $statusColor = 'red'; // default unpaid
 
-                if ($status === 'PAID') {
+                if ($status === 'paid') {
                     $statusColor = 'green';
-                } elseif ($status === 'PARTIAL') {
+                } elseif ($status === 'partial') {
                     $statusColor = 'yellow';
                 }
 
@@ -542,9 +542,9 @@ class StudentController extends Controller
 
             // Calculate summary
             $totalMonths = count($monthlyStatus);
-            $paidMonths = collect($monthlyStatus)->where('status', 'PAID')->count();
-            $partialMonths = collect($monthlyStatus)->where('status', 'PARTIAL')->count();
-            $unpaidMonths = collect($monthlyStatus)->where('status', 'UNPAID')->count();
+            $paidMonths = collect($monthlyStatus)->where('status', 'paid')->count();
+            $partialMonths = collect($monthlyStatus)->where('status', 'partial')->count();
+            $unpaidMonths = collect($monthlyStatus)->where('status', 'unpaid')->count();
 
             $totalAmount = collect($monthlyStatus)->sum('amount');
             $totalPaidAmount = collect($monthlyStatus)->sum('paid_amount');

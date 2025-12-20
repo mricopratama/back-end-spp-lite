@@ -35,6 +35,7 @@ class UpdateStudentRequest extends FormRequest
             'address' => 'nullable|string',
             'phone_number' => 'nullable|string|max:20',
             'status' => 'required|in:ACTIVE,INACTIVE,GRADUATED',
+            'spp_base_fee' => 'nullable|numeric|min:0',
         ];
     }
 

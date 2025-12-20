@@ -61,19 +61,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [InvoiceController::class, 'index']); // List invoices
         Route::post('/', [InvoiceController::class, 'store'])->middleware('role:admin'); // Create single invoice
         Route::post('/bulk', [InvoiceController::class, 'bulkStore'])->middleware('role:admin'); // Create bulk invoices
-        Route::get('/my', [InvoiceController::class, 'myInvoices']); // Student: my invoices
+        Route::post('/import', [InvoiceController::class, 'import'])->middleware('role:admin'); // Import from Excel
+        Route::get('/my', [InvoiceController::class, 'myInvoices']); // Student: my invoices (MUST be before /{invoice})
         Route::get('/{invoice}', [InvoiceController::class, 'show']); // Show invoice detail
         Route::delete('/{invoice}', [InvoiceController::class, 'destroy'])->middleware('role:admin'); // Delete invoice
-        Route::post('/import', [InvoiceController::class, 'import'])->middleware('role:admin'); // Import from Excel
     });
 
     // Payment routes
     Route::prefix('payments')->group(function () {
         Route::get('/', [PaymentController::class, 'index']); // List payments
         Route::post('/', [PaymentController::class, 'store'])->middleware('role:admin'); // Record payment (Admin only)
+        Route::get('/history', [PaymentController::class, 'paymentHistory']); // Payment history with date range
         Route::get('/my', [PaymentController::class, 'myPayments']); // Student: my payment history
         Route::get('/student/{studentId}', [PaymentController::class, 'studentHistory']); // Payment history by student
         Route::get('/{payment}', [PaymentController::class, 'show']); // Show payment detail
+        Route::get('/{payment}/print', [PaymentController::class, 'printReceipt']); // Print receipt
+        Route::delete('/{payment}', [PaymentController::class, 'destroy'])->middleware('role:admin'); // Delete payment (Admin only)
     });
 
     // Notification routes

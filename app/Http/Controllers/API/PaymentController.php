@@ -129,8 +129,14 @@ class PaymentController extends Controller
             // Calculate remaining amount
             $remainingAmount = $invoice->total_amount - $invoice->paid_amount;
 
-            // Validate: amount should not exceed remaining (allow overpayment based on your requirement)
-            // If overpayment is allowed, we still record it but cap the invoice paid_amount at total_amount
+            // Prevent overpayment
+            if ($validated['amount'] > $remainingAmount) {
+                return ApiResponse::error(
+                    "Payment amount ({$validated['amount']}) exceeds remaining amount ({$remainingAmount}). Please adjust the payment amount.",
+                    400
+                );
+            }
+
             $paymentAmount = $validated['amount'];
 
             // Generate receipt number
@@ -150,20 +156,15 @@ class PaymentController extends Controller
             // Update invoice paid_amount
             $newPaidAmount = $invoice->paid_amount + $paymentAmount;
 
-            // Cap at total_amount (prevent paid_amount > total_amount)
-            if ($newPaidAmount > $invoice->total_amount) {
-                $newPaidAmount = $invoice->total_amount;
-            }
-
             $invoice->paid_amount = $newPaidAmount;
 
             // Update invoice status
             if ($newPaidAmount >= $invoice->total_amount) {
-                $invoice->status = 'PAID';
+                $invoice->status = 'paid';
             } elseif ($newPaidAmount > 0) {
-                $invoice->status = 'PARTIAL';
+                $invoice->status = 'partial';
             } else {
-                $invoice->status = 'UNPAID';
+                $invoice->status = 'unpaid';
             }
 
             $invoice->save();
@@ -262,6 +263,90 @@ class PaymentController extends Controller
     }
 
     /**
+     * Get payment history with date range filter (Admin)
+     */
+    public function paymentHistory(Request $request)
+    {
+        try {
+            $query = Payment::query();
+
+            $query->with([
+                'invoice:id,invoice_number,student_id,academic_year_id,total_amount,paid_amount,status',
+                'invoice.student:id,nis,full_name',
+                'invoice.academicYear:id,name',
+                'processedBy:id,full_name'
+            ]);
+
+            // Required date range filter
+            if ($request->has('start_date') && $request->has('end_date')) {
+                $query->whereDate('payment_date', '>=', $request->start_date)
+                      ->whereDate('payment_date', '<=', $request->end_date);
+            }
+
+            // Optional filters
+            if ($request->has('payment_method')) {
+                $query->where('payment_method', $request->payment_method);
+            }
+
+            if ($request->has('student_id')) {
+                $query->whereHas('invoice', function ($q) use ($request) {
+                    $q->where('student_id', $request->student_id);
+                });
+            }
+
+            if ($request->has('academic_year_id')) {
+                $query->whereHas('invoice', function ($q) use ($request) {
+                    $q->where('academic_year_id', $request->academic_year_id);
+                });
+            }
+
+            $query->orderBy('payment_date', 'desc');
+
+            // Check pagination
+            if ($request->get('paginate', true) === 'false' || $request->get('paginate') === false) {
+                $payments = $query->get();
+
+                return ApiResponse::success([
+                    'payments' => $payments,
+                    'summary' => [
+                        'total_payments' => $payments->count(),
+                        'total_amount' => $payments->sum('amount'),
+                    ],
+                ], 'Payment history');
+            }
+
+            $perPage = $request->get('per_page', 15);
+            $payments = $query->paginate($perPage);
+
+            // Calculate total for all matching records (not just current page)
+            $totalAmount = Payment::query()
+                ->when($request->has('start_date') && $request->has('end_date'), function ($q) use ($request) {
+                    $q->whereDate('payment_date', '>=', $request->start_date)
+                      ->whereDate('payment_date', '<=', $request->end_date);
+                })
+                ->when($request->has('payment_method'), function ($q) use ($request) {
+                    $q->where('payment_method', $request->payment_method);
+                })
+                ->when($request->has('student_id'), function ($q) use ($request) {
+                    $q->whereHas('invoice', function ($query) use ($request) {
+                        $query->where('student_id', $request->student_id);
+                    });
+                })
+                ->sum('amount');
+
+            return ApiResponse::success([
+                'payments' => $payments,
+                'summary' => [
+                    'total_payments' => $payments->total(),
+                    'total_amount' => $totalAmount,
+                ],
+            ], 'Payment history');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to fetch payment history: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get payment history for current logged in student (Wali Murid)
      */
     public function myPayments(Request $request)
@@ -325,6 +410,107 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             // Don't fail the payment if notification creation fails
             Log::error('Failed to create payment notification: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Print payment receipt
+     */
+    public function printReceipt(Payment $payment)
+    {
+        $payment->load([
+            'invoice.student',
+            'invoice.academicYear',
+            'invoice.items.feeCategory',
+            'processedBy'
+        ]);
+
+        return ApiResponse::success([
+            'receipt' => [
+                'receipt_number' => $payment->receipt_number,
+                'payment_date' => $payment->payment_date->format('d/m/Y'),
+                'payment_time' => $payment->created_at->format('H:i:s'),
+                'amount' => $payment->amount,
+                'amount_formatted' => 'Rp ' . number_format($payment->amount, 0, ',', '.'),
+                'payment_method' => $payment->payment_method,
+                'notes' => $payment->notes,
+            ],
+            'student' => [
+                'nis' => $payment->invoice->student->nis,
+                'name' => $payment->invoice->student->full_name,
+                'address' => $payment->invoice->student->address,
+            ],
+            'invoice' => [
+                'invoice_number' => $payment->invoice->invoice_number,
+                'title' => $payment->invoice->title,
+                'academic_year' => $payment->invoice->academicYear->name,
+                'total_amount' => $payment->invoice->total_amount,
+                'paid_amount' => $payment->invoice->paid_amount,
+                'remaining_amount' => $payment->invoice->total_amount - $payment->invoice->paid_amount,
+                'status' => $payment->invoice->status,
+                'items' => $payment->invoice->items->map(function ($item) {
+                    return [
+                        'fee_category' => $item->feeCategory->name,
+                        'description' => $item->description,
+                        'amount' => $item->amount,
+                    ];
+                }),
+            ],
+            'processed_by' => $payment->processedBy ? $payment->processedBy->full_name : null,
+            'print_date' => now()->format('d/m/Y H:i:s'),
+        ], 'Payment receipt data');
+    }
+
+    /**
+     * Delete payment and update invoice
+     */
+    public function destroy(Payment $payment)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Get invoice before deleting payment
+            $invoice = Invoice::findOrFail($payment->invoice_id);
+
+            // Store payment amount for invoice update
+            $paymentAmount = $payment->amount;
+
+            // Delete payment
+            $payment->delete();
+
+            // Update invoice paid_amount
+            $invoice->paid_amount = $invoice->paid_amount - $paymentAmount;
+
+            // Ensure paid_amount doesn't go negative
+            if ($invoice->paid_amount < 0) {
+                $invoice->paid_amount = 0;
+            }
+
+            // Update invoice status
+            if ($invoice->paid_amount >= $invoice->total_amount) {
+                $invoice->status = 'paid';
+            } elseif ($invoice->paid_amount > 0) {
+                $invoice->status = 'partial';
+            } else {
+                $invoice->status = 'unpaid';
+            }
+
+            $invoice->save();
+
+            DB::commit();
+
+            return ApiResponse::success([
+                'invoice' => [
+                    'invoice_number' => $invoice->invoice_number,
+                    'total_amount' => $invoice->total_amount,
+                    'paid_amount' => $invoice->paid_amount,
+                    'remaining_amount' => $invoice->total_amount - $invoice->paid_amount,
+                    'status' => $invoice->status,
+                ],
+            ], 'Payment deleted successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::error('Failed to delete payment: ' . $e->getMessage(), 500);
         }
     }
 }

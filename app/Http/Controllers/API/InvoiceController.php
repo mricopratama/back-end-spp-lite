@@ -98,11 +98,12 @@ class InvoiceController extends Controller
             // Create invoice
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
+                'title' => $validated['title'] ?? 'Invoice Tagihan SPP',
                 'student_id' => $validated['student_id'],
                 'academic_year_id' => $validated['academic_year_id'],
                 'total_amount' => $totalAmount,
                 'paid_amount' => 0,
-                'status' => 'UNPAID',
+                'status' => 'unpaid',
                 'due_date' => $validated['due_date'],
             ]);
 
@@ -130,7 +131,7 @@ class InvoiceController extends Controller
                 'invoice_number' => $invoiceNumber,
                 'student_name' => $student->full_name,
                 'total_amount' => $totalAmount,
-                'status' => 'UNPAID',
+                'status' => 'unpaid',
                 'items_count' => count($validated['items']),
             ], 'Invoice generated successfully', 201);
         } catch (\Exception $e) {
@@ -200,11 +201,12 @@ class InvoiceController extends Controller
                 // Create invoice
                 $invoice = Invoice::create([
                     'invoice_number' => $invoiceNumber,
+                    'title' => $validated['title'] ?? 'Invoice Tagihan SPP',
                     'student_id' => $studentId,
                     'academic_year_id' => $validated['academic_year_id'],
                     'total_amount' => $totalAmount,
                     'paid_amount' => 0,
-                    'status' => 'UNPAID',
+                    'status' => 'unpaid',
                     'due_date' => $validated['due_date'],
                 ]);
 
@@ -242,50 +244,45 @@ class InvoiceController extends Controller
     /**
      * Display the specified invoice with details
      */
-    public function show($id)
+    public function show(Invoice $invoice)
     {
-        try {
-            $invoice = Invoice::with([
-                'student',
-                'academicYear',
-                'items.feeCategory',
-                'payments' => function ($query) {
-                    $query->whereNull('deleted_at');
-                }
-            ])->findOrFail($id);
+        $invoice->load([
+            'student',
+            'academicYear',
+            'items.feeCategory',
+            'payments'
+        ]);
 
-            return ApiResponse::success([
-                'id' => $invoice->id,
-                'invoice_number' => $invoice->invoice_number,
-                'student_name' => $invoice->student->full_name,
-                'student_nis' => $invoice->student->nis,
-                'academic_year' => $invoice->academicYear->name,
-                'status' => $invoice->status,
-                'total_amount' => $invoice->total_amount,
-                'paid_amount' => $invoice->paid_amount,
-                'remaining_amount' => $invoice->total_amount - $invoice->paid_amount,
-                'due_date' => $invoice->due_date,
-                'items' => $invoice->items->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'fee_category' => $item->feeCategory->name,
-                        'description' => $item->description,
-                        'amount' => $item->amount,
-                    ];
-                }),
-                'payments' => $invoice->payments->map(function ($payment) {
-                    return [
-                        'id' => $payment->id,
-                        'amount' => $payment->amount,
-                        'payment_method' => $payment->payment_method,
-                        'payment_date' => $payment->payment_date,
-                        'notes' => $payment->notes,
-                    ];
-                }),
-            ], 'Invoice detail fetched');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Invoice not found', 404);
-        }
+        return ApiResponse::success([
+            'id' => $invoice->id,
+            'invoice_number' => $invoice->invoice_number,
+            'title' => $invoice->title,
+            'student_name' => $invoice->student->full_name,
+            'student_nis' => $invoice->student->nis,
+            'academic_year' => $invoice->academicYear->name,
+            'status' => $invoice->status,
+            'total_amount' => $invoice->total_amount,
+            'paid_amount' => $invoice->paid_amount,
+            'remaining_amount' => $invoice->total_amount - $invoice->paid_amount,
+            'due_date' => $invoice->due_date->format('Y-m-d'),
+            'items' => $invoice->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'fee_category' => $item->feeCategory->name,
+                    'description' => $item->description,
+                    'amount' => $item->amount,
+                ];
+            }),
+            'payments' => $invoice->payments->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'payment_method' => $payment->payment_method,
+                    'payment_date' => $payment->payment_date,
+                    'notes' => $payment->notes,
+                ];
+            }),
+        ], 'Invoice detail fetched');
     }
 
     /**
@@ -319,12 +316,10 @@ class InvoiceController extends Controller
     /**
      * Remove the specified invoice (void)
      */
-    public function destroy($id)
+    public function destroy(Invoice $invoice)
     {
         try {
             DB::beginTransaction();
-
-            $invoice = Invoice::findOrFail($id);
 
             // Check if invoice has payments
             if ($invoice->paid_amount > 0) {

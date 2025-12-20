@@ -26,7 +26,7 @@ class ReportController extends Controller
                 'student.classHistory.class',
                 'items.feeCategory'
             ])
-                ->whereIn('status', ['UNPAID', 'PARTIAL']);
+                ->whereIn('status', ['unpaid', 'partial']);
 
             // Filter by class
             if ($request->has('class_id')) {
@@ -119,13 +119,11 @@ class ReportController extends Controller
             $endDate = $request->get('end_date', now()->endOfMonth()->format('Y-m-d'));
 
             // Total income in period
-            $totalIncome = Payment::whereNull('deleted_at')
-                ->whereBetween('payment_date', [$startDate, $endDate])
+            $totalIncome = Payment::whereBetween('payment_date', [$startDate, $endDate])
                 ->sum('amount');
 
             // Breakdown by payment method
-            $breakdownByMethod = Payment::whereNull('deleted_at')
-                ->whereBetween('payment_date', [$startDate, $endDate])
+            $breakdownByMethod = Payment::whereBetween('payment_date', [$startDate, $endDate])
                 ->select('payment_method', DB::raw('SUM(amount) as total'))
                 ->groupBy('payment_method')
                 ->get()
@@ -134,8 +132,7 @@ class ReportController extends Controller
                 });
 
             // Daily income
-            $dailyIncome = Payment::whereNull('deleted_at')
-                ->whereBetween('payment_date', [$startDate, $endDate])
+            $dailyIncome = Payment::whereBetween('payment_date', [$startDate, $endDate])
                 ->select(
                     DB::raw('DATE(payment_date) as date'),
                     DB::raw('SUM(amount) as amount'),
@@ -153,8 +150,7 @@ class ReportController extends Controller
                 });
 
             // Breakdown by fee category
-            $breakdownByCategory = Payment::whereNull('deleted_at')
-                ->whereBetween('payment_date', [$startDate, $endDate])
+            $breakdownByCategory = Payment::whereBetween('payment_date', [$startDate, $endDate])
                 ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
                 ->join('invoice_items', 'invoices.id', '=', 'invoice_items.invoice_id')
                 ->join('fee_categories', 'invoice_items.fee_category_id', '=', 'fee_categories.id')
@@ -169,8 +165,7 @@ class ReportController extends Controller
                 });
 
             // Transaction count
-            $transactionCount = Payment::whereNull('deleted_at')
-                ->whereBetween('payment_date', [$startDate, $endDate])
+            $transactionCount = Payment::whereBetween('payment_date', [$startDate, $endDate])
                 ->count();
 
             return ApiResponse::success([
@@ -240,8 +235,7 @@ class ReportController extends Controller
             }
 
             // Calculate paid amount per category from payments
-            $payments = Payment::whereNull('deleted_at')
-                ->whereIn('invoice_id', $invoices->pluck('id'))
+            $payments = Payment::whereIn('invoice_id', $invoices->pluck('id'))
                 ->get();
 
             foreach ($payments as $payment) {
@@ -361,8 +355,7 @@ class ReportController extends Controller
     public function paymentHistory(Request $request)
     {
         try {
-            $query = Payment::with(['invoice.student', 'invoice.items.feeCategory'])
-                ->whereNull('deleted_at');
+            $query = Payment::with(['invoice.student', 'invoice.items.feeCategory']);
 
             // Filter by date range
             if ($request->has('start_date')) {

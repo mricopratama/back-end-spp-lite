@@ -22,6 +22,7 @@ class BulkInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'title' => 'nullable|string|max:255',
             'class_id' => 'nullable|exists:classes,id',
             'student_ids' => 'nullable|array',
             'student_ids.*' => 'exists:students,id',
