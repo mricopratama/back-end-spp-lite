@@ -23,12 +23,18 @@ class MasterDataSeeder extends Seeder
 
         // Seed Classes (SD Level 1-6)
         $classes = [
-            ['name' => 'Kelas 1', 'level' => 1],
-            ['name' => 'Kelas 2', 'level' => 2],
-            ['name' => 'Kelas 3', 'level' => 3],
-            ['name' => 'Kelas 4', 'level' => 4],
-            ['name' => 'Kelas 5', 'level' => 5],
-            ['name' => 'Kelas 6', 'level' => 6],
+            ['name' => 'Kelas 1.1', 'level' => 1],
+            ['name' => 'Kelas 1.2', 'level' => 1],
+            ['name' => 'Kelas 2.1', 'level' => 2],
+            ['name' => 'Kelas 2.2', 'level' => 2],
+            ['name' => 'Kelas 3.1', 'level' => 3],
+            ['name' => 'Kelas 3.2', 'level' => 3],
+            ['name' => 'Kelas 4.1', 'level' => 4],
+            ['name' => 'Kelas 4.2', 'level' => 4],
+            ['name' => 'Kelas 5.1', 'level' => 5],
+            ['name' => 'Kelas 5.2', 'level' => 5],
+            ['name' => 'Kelas 6.1', 'level' => 6],
+            ['name' => 'Kelas 6.2', 'level' => 6],
         ];
 
         foreach ($classes as $class) {
@@ -39,23 +45,69 @@ class MasterDataSeeder extends Seeder
         $feeCategories = [
             [
                 'name' => 'SPP',
-                'default_amount' => 500000,
-                'description' => 'Sumbangan Pembinaan Pendidikan',
+                'default_amount' => 180000,
+                'description' => 'SPP Bulanan',
             ],
             [
                 'name' => 'Buku',
-                'default_amount' => 300000,
+                'default_amount' => 650000,
                 'description' => 'Uang Buku Pelajaran',
             ],
+            // Ekstrakurikuler
             [
-                'name' => 'Ekskul',
-                'default_amount' => 200000,
-                'description' => 'Kegiatan Ekstrakurikuler',
+                'name' => 'ENGLISH CLUB',
+                'default_amount' => 450000,
+                'description' => 'Kegiatan Ekstrakurikuler English Club',
+            ],
+            [
+                'name' => 'SENI LUKIS',
+                'default_amount' => 400000,
+                'description' => 'Kegiatan Ekstrakurikuler Seni Lukis',
+            ],
+            [
+                'name' => 'BADMINTON',
+                'default_amount' => 500000,
+                'description' => 'Kegiatan Ekstrakurikuler Badminton',
+            ],
+            [
+                'name' => 'RENANG',
+                'default_amount' => 600000,
+                'description' => 'Kegiatan Ekstrakurikuler Renang',
+            ],
+            [
+                'name' => 'FUTSAL',
+                'default_amount' => 600000,
+                'description' => 'Kegiatan Ekstrakurikuler Futsal',
+            ],
+            [
+                'name' => 'KOMPUTER (IT)',
+                'default_amount' => 450000,
+                'description' => 'Kegiatan Ekstrakurikuler Komputer (IT)',
+            ],
+            [
+                'name' => 'QIROAH',
+                'default_amount' => 400000,
+                'description' => 'Kegiatan Ekstrakurikuler Qiroah',
+            ],
+            [
+                'name' => 'TPA',
+                'default_amount' => 400000,
+                'description' => 'Kegiatan Ekstrakurikuler TPA',
+            ],
+            [
+                'name' => 'SENI VOCAL',
+                'default_amount' => 450000,
+                'description' => 'Kegiatan Ekstrakurikuler Seni Vocal',
+            ],
+            [
+                'name' => 'TARI',
+                'default_amount' => 450000,
+                'description' => 'Kegiatan Ekstrakurikuler Tari',
             ],
             [
                 'name' => 'Daftar Ulang',
-                'default_amount' => 1000000,
-                'description' => 'Biaya Daftar Ulang Tahunan',
+                'default_amount' => 745000,
+                'description' => 'Biaya Daftar Ulang',
             ],
         ];
 
