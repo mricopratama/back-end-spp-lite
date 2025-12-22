@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateStudentRequest;
 use App\Http\Requests\SetStudentClassRequest;
 use App\Http\Requests\BulkPromoteRequest;
 use App\Http\Requests\ImportStudentsRequest;
+use App\Http\Requests\UpdateSppBaseFeeRequest;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,17 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         try {
+            $user = Auth::user();
+
             $query = Student::query();
+
+            // If user is student, only return their own data
+            if ($user->role->name === 'student') {
+                if (!$user->student_id) {
+                    return ApiResponse::error('Student record not found', 404);
+                }
+                $query->where('id', $user->student_id);
+            }
 
             // Optimize: Only load relationships if needed
             $with = ['currentClass'];
@@ -134,6 +145,15 @@ class StudentController extends Controller
     public function show($id)
     {
         try {
+            $user = Auth::user();
+
+            // If user is student, only allow access to their own data
+            if ($user->role->name === 'student') {
+                if ($user->student_id != $id) {
+                    return ApiResponse::error('Forbidden: You can only access your own data', 403);
+                }
+            }
+
             $student = Student::with([
                 'classHistory.academicYear',
                 'classHistory.class',
@@ -351,7 +371,8 @@ class StudentController extends Controller
     }
 
     /**
-     * Import students from Excel
+     * Import students from Excel with intelligent scanning
+     * Scans all sheets and finds data automatically
      */
     public function import(ImportStudentsRequest $request)
     {
@@ -360,67 +381,334 @@ class StudentController extends Controller
 
             $file = $request->file('file');
             $spreadsheet = IOFactory::load($file->getPathname());
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
 
-            // Expected columns: NIS, Nama, Alamat, No HP, Status
-            $header = array_shift($rows); // Remove header row
+            // Scan all sheets to find student data
+            $dataRegion = $this->findStudentDataRegion($spreadsheet);
+
+            if (!$dataRegion) {
+                return ApiResponse::error(
+                    'Tidak dapat menemukan data siswa di file Excel. ' .
+                    'Pastikan ada kolom dengan header NIS dan Nama di salah satu sheet.',
+                    400,
+                    [
+                        'total_sheets' => $spreadsheet->getSheetCount(),
+                        'sheets_scanned' => array_map(function($i) use ($spreadsheet) {
+                            return $spreadsheet->getSheet($i)->getTitle();
+                        }, range(0, $spreadsheet->getSheetCount() - 1)),
+                        'help' => 'Sistem akan otomatis mencari data di semua sheet. Pastikan ada header yang jelas seperti: NIS, Nama, Alamat, No HP, Status'
+                    ]
+                );
+            }
+
+            $worksheet = $dataRegion['worksheet'];
+            $headerRow = $dataRegion['header_row'];
+            $startRow = $dataRegion['start_row'];
+            $endRow = $dataRegion['end_row'];
+            $columnMapping = $dataRegion['columns'];
 
             $inserted = 0;
             $failed = 0;
             $errors = [];
+            $debugInfo = [
+                'sheet_name' => $dataRegion['sheet_name'],
+                'header_row' => $headerRow,
+                'data_start_row' => $startRow,
+                'data_end_row' => $endRow,
+                'column_mapping' => [
+                    'nis' => $columnMapping['nis'],
+                    'name' => $columnMapping['name'],
+                    'address' => $columnMapping['address'] ?: 'Not found',
+                    'phone' => $columnMapping['phone'] ?: 'Not found',
+                    'status' => $columnMapping['status'] ?: 'Not found',
+                    'spp_base_fee' => $columnMapping['spp_base_fee'] ?: 'Not found (will use 0)',
+                ]
+            ];
 
-            foreach ($rows as $index => $row) {
-                // Skip empty rows
-                if (empty(array_filter($row))) {
-                    continue;
-                }
-
+            // Process data rows
+            for ($row = $startRow; $row <= $endRow; $row++) {
                 try {
-                    $rowNumber = $index + 2; // +2 because array starts at 0 and we removed header
+                    // Read data using detected column positions
+                    $nis = trim($worksheet->getCell($columnMapping['nis'] . $row)->getValue() ?? '');
+                    $fullName = trim($worksheet->getCell($columnMapping['name'] . $row)->getValue() ?? '');
+                    $address = $columnMapping['address']
+                        ? trim($worksheet->getCell($columnMapping['address'] . $row)->getValue() ?? '')
+                        : '';
+                    $phoneNumber = $columnMapping['phone']
+                        ? trim($worksheet->getCell($columnMapping['phone'] . $row)->getValue() ?? '')
+                        : '';
+                    $status = $columnMapping['status']
+                        ? trim($worksheet->getCell($columnMapping['status'] . $row)->getValue() ?? 'ACTIVE')
+                        : 'ACTIVE';
+                    $sppBaseFee = $columnMapping['spp_base_fee']
+                        ? trim($worksheet->getCell($columnMapping['spp_base_fee'] . $row)->getValue() ?? '0')
+                        : '0';
+
+                    // Skip completely empty rows
+                    if (empty($nis) && empty($fullName) && empty($address) && empty($phoneNumber)) {
+                        continue;
+                    }
+
+                    // Debug info for first few data rows
+                    if (count($debugInfo['sample_data'] ?? []) < 3) {
+                        $debugInfo['sample_data'][] = "Row {$row}: NIS='{$nis}', Name='{$fullName}', SPP='{$sppBaseFee}'";
+                    }
 
                     // Validate required fields
-                    if (empty($row[0]) || empty($row[1])) {
-                        $errors[] = "Row {$rowNumber}: NIS dan Nama wajib diisi";
+                    if (empty($nis)) {
+                        $errors[] = "Row {$row}: NIS wajib diisi";
+                        $failed++;
+                        continue;
+                    }
+
+                    if (empty($fullName)) {
+                        $errors[] = "Row {$row}: Nama wajib diisi";
                         $failed++;
                         continue;
                     }
 
                     // Check if NIS already exists
-                    if (Student::where('nis', $row[0])->exists()) {
-                        $errors[] = "Row {$rowNumber}: NIS {$row[0]} sudah terdaftar";
+                    if (Student::where('nis', $nis)->exists()) {
+                        $errors[] = "Row {$row}: NIS {$nis} sudah terdaftar";
                         $failed++;
                         continue;
                     }
 
+                    // Normalize status
+                    $status = strtoupper($status);
+                    if (!in_array($status, ['ACTIVE', 'GRADUATED', 'DROPPED_OUT', 'TRANSFERRED'])) {
+                        $status = 'ACTIVE';
+                    }
+
+                    // Clean and validate SPP base fee
+                    // Remove currency symbols and separators (Rp, ., ,)
+                    $sppBaseFee = preg_replace('/[^\d]/', '', $sppBaseFee);
+                    $sppBaseFee = empty($sppBaseFee) ? 0 : (float) $sppBaseFee;
+
                     // Create student
                     Student::create([
-                        'nis' => $row[0],
-                        'full_name' => $row[1],
-                        'address' => $row[2] ?? null,
-                        'phone_number' => $row[3] ?? null,
-                        'status' => $row[4] ?? 'ACTIVE',
+                        'nis' => $nis,
+                        'full_name' => $fullName,
+                        'address' => $address ?: null,
+                        'phone_number' => $phoneNumber ?: null,
+                        'status' => $status,
+                        'spp_base_fee' => $sppBaseFee,
                     ]);
 
                     $inserted++;
                 } catch (\Exception $e) {
-                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                    $errors[] = "Row {$row}: " . $e->getMessage();
                     $failed++;
                 }
             }
 
             DB::commit();
 
-            return ApiResponse::success([
-                'total_rows' => count($rows),
+            $response = [
+                'total_rows' => $endRow - $startRow + 1,
                 'inserted' => $inserted,
                 'failed' => $failed,
-                'errors' => $errors,
-            ], "Import completed. {$inserted} students inserted, {$failed} failed.");
+                'errors' => array_slice($errors, 0, 20), // Limit errors to first 20
+            ];
+
+            // Add debug info
+            $response['import_info'] = $debugInfo;
+
+            return ApiResponse::success(
+                $response,
+                "Import completed. {$inserted} students inserted, {$failed} failed."
+            );
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::error('Failed to import students: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Find student data region across all sheets
+     * Returns the best matching data region
+     */
+    private function findStudentDataRegion($spreadsheet)
+    {
+        $bestMatch = null;
+        $bestScore = 0;
+
+        // Scan all sheets
+        for ($sheetIndex = 0; $sheetIndex < $spreadsheet->getSheetCount(); $sheetIndex++) {
+            $worksheet = $spreadsheet->getSheet($sheetIndex);
+            $sheetName = $worksheet->getTitle();
+
+            // Find data region in this sheet
+            $region = $this->detectDataRegionInSheet($worksheet, $sheetName);
+
+            if ($region && $region['score'] > $bestScore) {
+                $bestScore = $region['score'];
+                $bestMatch = $region;
+            }
+        }
+
+        return $bestMatch;
+    }
+
+    /**
+     * Detect data region in a single sheet
+     */
+    private function detectDataRegionInSheet($worksheet, $sheetName)
+    {
+        $highestRow = $worksheet->getHighestRow();
+        $highestColumn = $worksheet->getHighestColumn();
+        $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
+
+        // Limit search area to prevent timeout (max 100 rows, 20 columns)
+        $searchMaxRow = min($highestRow, 100);
+        $searchMaxCol = min($highestColumnIndex, 20);
+
+        // Find header row by scanning for NIS and Nama columns
+        for ($row = 1; $row <= $searchMaxRow; $row++) {
+            $columnMapping = $this->detectStudentColumnsInRow($worksheet, $row, $searchMaxCol);
+
+            if ($columnMapping['nis'] && $columnMapping['name']) {
+                // Found potential header row
+                // Now find where data ends
+                $dataStartRow = $row + 1;
+                $dataEndRow = $this->findDataEndRow($worksheet, $dataStartRow, $highestRow, $columnMapping);
+
+                if ($dataEndRow >= $dataStartRow) {
+                    // Calculate score based on data quality
+                    $score = $this->calculateDataRegionScore($worksheet, $dataStartRow, $dataEndRow, $columnMapping);
+
+                    return [
+                        'worksheet' => $worksheet,
+                        'sheet_name' => $sheetName,
+                        'header_row' => $row,
+                        'start_row' => $dataStartRow,
+                        'end_row' => $dataEndRow,
+                        'columns' => $columnMapping,
+                        'score' => $score
+                    ];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Detect student columns in a specific row
+     */
+    private function detectStudentColumnsInRow($worksheet, $row, $maxCol)
+    {
+        $mapping = [
+            'nis' => null,
+            'name' => null,
+            'address' => null,
+            'phone' => null,
+            'status' => null,
+            'spp_base_fee' => null,
+        ];
+
+        for ($col = 1; $col <= $maxCol; $col++) {
+            $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+            $cell = $worksheet->getCell($columnLetter . $row);
+            $headerValue = $cell->getValue();
+
+            // Handle formatted/rich text
+            if ($headerValue instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText) {
+                $headerValue = $headerValue->getPlainText();
+            }
+
+            // Normalize
+            $normalized = preg_replace('/\s+/', ' ', strtolower(trim($headerValue ?? '')));
+            $normalized = preg_replace('/[^a-z0-9\s]/', '', $normalized);
+
+            // Match columns
+            if (!$mapping['nis'] && preg_match('/\b(nis|nomor\s*induk|no\s*induk|student\s*id|id\s*siswa)\b/', $normalized)) {
+                $mapping['nis'] = $columnLetter;
+            }
+            if (!$mapping['name'] && preg_match('/\bnama\b|\bname\b|\bfull\s*name\b|\bstudent\s*name\b/', $normalized)) {
+                $mapping['name'] = $columnLetter;
+            }
+            if (!$mapping['address'] && preg_match('/\balamat\b|\baddress\b|\baddr\b/', $normalized)) {
+                $mapping['address'] = $columnLetter;
+            }
+            if (!$mapping['phone'] && preg_match('/\b(hp|phone|telepon|telp|contact|no\s*hp|nomor\s*hp)\b/', $normalized)) {
+                $mapping['phone'] = $columnLetter;
+            }
+            if (!$mapping['status'] && preg_match('/\b(status|state|kondisi)\b/', $normalized)) {
+                $mapping['status'] = $columnLetter;
+            }
+            if (!$mapping['spp_base_fee'] && preg_match('/\b(spp|spp\s*base|base\s*fee|spp\s*fee|biaya\s*spp|spp\s*bulanan|spp\s*bulan)\b/', $normalized)) {
+                $mapping['spp_base_fee'] = $columnLetter;
+            }
+        }
+
+        return $mapping;
+    }
+
+    /**
+     * Find the last row with data
+     */
+    private function findDataEndRow($worksheet, $startRow, $maxRow, $columnMapping)
+    {
+        $emptyRowCount = 0;
+        $lastDataRow = $startRow - 1;
+
+        for ($row = $startRow; $row <= $maxRow; $row++) {
+            $nis = trim($worksheet->getCell($columnMapping['nis'] . $row)->getValue() ?? '');
+            $name = trim($worksheet->getCell($columnMapping['name'] . $row)->getValue() ?? '');
+
+            if (!empty($nis) || !empty($name)) {
+                $lastDataRow = $row;
+                $emptyRowCount = 0;
+            } else {
+                $emptyRowCount++;
+
+                // Stop if 5 consecutive empty rows
+                if ($emptyRowCount >= 5) {
+                    break;
+                }
+            }
+        }
+
+        return $lastDataRow;
+    }
+
+    /**
+     * Calculate quality score for data region
+     */
+    private function calculateDataRegionScore($worksheet, $startRow, $endRow, $columnMapping)
+    {
+        $score = 0;
+        $rowCount = 0;
+        $validRows = 0;
+
+        // Sample up to 10 rows
+        $sampleRows = min(10, $endRow - $startRow + 1);
+        $step = max(1, floor(($endRow - $startRow + 1) / $sampleRows));
+
+        for ($row = $startRow; $row <= $endRow && $rowCount < $sampleRows; $row += $step) {
+            $rowCount++;
+            $nis = trim($worksheet->getCell($columnMapping['nis'] . $row)->getValue() ?? '');
+            $name = trim($worksheet->getCell($columnMapping['name'] . $row)->getValue() ?? '');
+
+            if (!empty($nis) && !empty($name)) {
+                $validRows++;
+            }
+        }
+
+        // Base score: percentage of valid rows
+        $score = ($validRows / max(1, $rowCount)) * 100;
+
+        // Bonus for having optional columns
+        if ($columnMapping['address']) $score += 5;
+        if ($columnMapping['phone']) $score += 5;
+        if ($columnMapping['status']) $score += 5;
+
+        // Bonus for more data rows
+        $totalRows = $endRow - $startRow + 1;
+        if ($totalRows >= 10) $score += 10;
+        if ($totalRows >= 50) $score += 10;
+
+        return $score;
     }
 
     /**
@@ -453,6 +741,15 @@ class StudentController extends Controller
     public function sppCard($id, Request $request)
     {
         try {
+            $user = Auth::user();
+
+            // If user is student, only allow access to their own SPP card
+            if ($user->role->name === 'student') {
+                if ($user->student_id != $id) {
+                    return ApiResponse::error('Forbidden: You can only access your own SPP card', 403);
+                }
+            }
+
             $student = Student::with(['currentClass', 'user'])->findOrFail($id);
 
             // Get academic year (default to active one if not specified)
@@ -595,6 +892,32 @@ class StudentController extends Controller
             return $this->sppCard($user->student_id, $request);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch SPP card: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Update SPP base fee for a student (Admin only)
+     */
+    public function updateSppBaseFee(UpdateSppBaseFeeRequest $request, Student $student)
+    {
+        try {
+            $validated = $request->validated();
+
+            $oldFee = $student->spp_base_fee;
+            $student->spp_base_fee = $validated['spp_base_fee'];
+            $student->save();
+
+            return ApiResponse::success([
+                'student_id' => $student->id,
+                'nis' => $student->nis,
+                'full_name' => $student->full_name,
+                'old_spp_base_fee' => $oldFee,
+                'new_spp_base_fee' => $student->spp_base_fee,
+                'note' => 'Perubahan ini hanya berlaku untuk invoice yang dibuat setelah update ini',
+            ], 'SPP base fee updated successfully');
+
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to update SPP base fee: ' . $e->getMessage(), 500);
         }
     }
 }

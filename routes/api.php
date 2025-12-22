@@ -51,6 +51,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{student}/create-user', [StudentController::class, 'createUserAccount'])->middleware('role:admin');
         Route::post('/import', [StudentController::class, 'import'])->middleware('role:admin');
 
+        // SPP Base Fee Management (Admin only)
+        Route::put('/{student}/spp-base-fee', [StudentController::class, 'updateSppBaseFee'])->middleware('role:admin');
+
         // SPP Card (Kartu SPP Digital)
         Route::get('/{student}/spp-card', [StudentController::class, 'sppCard']); // SPP card for specific student
         Route::get('/my/spp-card', [StudentController::class, 'mySppCard']); // My SPP card (Wali Murid)
@@ -61,6 +64,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [InvoiceController::class, 'index']); // List invoices
         Route::post('/', [InvoiceController::class, 'store'])->middleware('role:admin'); // Create single invoice
         Route::post('/bulk', [InvoiceController::class, 'bulkStore'])->middleware('role:admin'); // Create bulk invoices
+
+        // Monthly SPP Generation (NEW)
+        Route::post('/generate-monthly-spp', [InvoiceController::class, 'generateMonthlySpp'])->middleware('role:admin');
+        Route::post('/generate-missing-months', [InvoiceController::class, 'generateMissingMonths'])->middleware('role:admin');
+        Route::get('/monthly-status/{studentId}', [InvoiceController::class, 'getMonthlyPaymentStatus']);
+
         Route::post('/import', [InvoiceController::class, 'import'])->middleware('role:admin'); // Import from Excel
         Route::get('/my', [InvoiceController::class, 'myInvoices']); // Student: my invoices (MUST be before /{invoice})
         Route::get('/{invoice}', [InvoiceController::class, 'show']); // Show invoice detail

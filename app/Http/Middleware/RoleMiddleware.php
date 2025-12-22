@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 use App\Helpers\ApiResponse;
 
@@ -16,7 +17,7 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         if (!$user) {
             return ApiResponse::error('Unauthorized', 401);

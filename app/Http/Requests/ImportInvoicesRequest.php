@@ -23,7 +23,7 @@ class ImportInvoicesRequest extends FormRequest
     {
         return [
             'file' => 'required|file|mimes:xlsx,xls,csv|max:5120', // Max 5MB
-            'academic_year_id' => 'required|exists:academic_years,id',
+            'academic_year_id' => 'nullable|exists:academic_years,id',
         ];
     }
 
@@ -36,7 +36,7 @@ class ImportInvoicesRequest extends FormRequest
             'file.required' => 'File wajib diupload',
             'file.mimes' => 'File harus berformat Excel (.xlsx, .xls) atau CSV',
             'file.max' => 'Ukuran file maksimal 5MB',
-            'academic_year_id.required' => 'Tahun ajaran wajib diisi',
+            'academic_year_id.exists' => 'Tahun ajaran tidak valid',
         ];
     }
 }
