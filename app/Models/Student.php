@@ -17,12 +17,14 @@ class Student extends Model
         'address',
         'phone_number',
         'status',
-        'spp_base_fee',
     ];
 
-    protected $casts = [
-        'spp_base_fee' => 'decimal:2',
-    ];
+    protected $casts = [];
+
+    /**
+     * Appends attributes to model
+     */
+    protected $appends = ['current_class_info'];
 
     /**
      * Get the user account associated with this student.
@@ -53,14 +55,20 @@ class Student extends Model
      */
     public function currentClass()
     {
-        return $this->hasOneThrough(
-            Classes::class,
-            StudentClassHistory::class,
-            'student_id',
-            'id',
-            'id',
-            'class_id'
-        )->latest('student_class_history.academic_year_id');
+        return $this->belongsTo(StudentClassHistory::class, 'id', 'student_id')
+            ->with(['class.academicYear', 'academicYear'])
+            ->latest('academic_year_id')
+            ->limit(1);
+    }
+
+    /**
+     * Get current class history record with class and academic year
+     */
+    public function currentClassHistory()
+    {
+        return $this->hasOne(StudentClassHistory::class)
+            ->with(['class', 'academicYear'])
+            ->latest('academic_year_id');
     }
 
     /**
@@ -69,6 +77,28 @@ class Student extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * Get current class info as accessor
+     */
+    public function getCurrentClassInfoAttribute()
+    {
+        $history = $this->classHistories()
+            ->with(['class', 'academicYear'])
+            ->latest('academic_year_id')
+            ->first();
+
+        if (!$history) {
+            return null;
+        }
+
+        return [
+            'class_id' => $history->class_id,
+            'class_name' => $history->class->name ?? null,
+            'academic_year_id' => $history->academic_year_id,
+            'academic_year_name' => $history->academicYear->name ?? null,
+        ];
     }
 
     /**

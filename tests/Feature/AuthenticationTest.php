@@ -138,7 +138,6 @@ class AuthenticationTest extends TestCase
             'full_name' => 'Budi Santoso',
             'address' => 'Jl. Example No. 1',
             'status' => 'active',
-            'spp_base_fee' => 500000,
         ]);
 
         // Create academic year

@@ -12,7 +12,6 @@ use App\Http\Requests\UpdateStudentRequest;
 use App\Http\Requests\SetStudentClassRequest;
 use App\Http\Requests\BulkPromoteRequest;
 use App\Http\Requests\ImportStudentsRequest;
-use App\Http\Requests\UpdateSppBaseFeeRequest;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -111,6 +110,152 @@ class StudentController extends Controller
             $students = $query->paginate($perPage);
 
             return ApiResponse::success($students, 'List of students');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to fetch students: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get paginated students list with customizable parameters
+     *
+     * Query Parameters:
+     * - page: Page number (default: 1)
+     * - per_page: Items per page (default: 15, max: 100)
+     * - academic_year_id: Filter by academic year ID (exact match)
+     * - year: Filter by year (supports: 2024, 2025, or 2024-2025)
+     * - class_id: Filter by class
+     * - status: Filter by status (active, inactive, graduated, dropped)
+     * - search: Search by name, NIS, address, or phone
+     * - sort_by: Sort column (full_name, nis, status, created_at)
+     * - sort_order: Sort direction (asc, desc)
+     */
+    public function paginate(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // Validate pagination parameters
+            $request->validate([
+                'page' => 'nullable|integer|min:1',
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'academic_year_id' => 'nullable|exists:academic_years,id',
+                'year' => 'nullable|string|regex:/^\d{4}(-\d{4})?$/',
+                'class_id' => 'nullable|exists:classes,id',
+                'status' => 'nullable|in:active,inactive,graduated,dropped',
+                'search' => 'nullable|string|max:255',
+                'sort_by' => 'nullable|in:full_name,nis,status,created_at',
+                'sort_order' => 'nullable|in:asc,desc',
+            ]);
+
+            $query = Student::query();
+
+            // If user is student, only return their own data
+            if ($user->role->name === 'student') {
+                if (!$user->student_id) {
+                    return ApiResponse::error('Student record not found', 404);
+                }
+                $query->where('id', $user->student_id);
+            }
+
+            // Load relationships
+            $query->with(['currentClassHistory.class', 'currentClassHistory.academicYear']);
+
+            // Filter by academic year (supports both ID and year)
+            if ($request->has('academic_year_id')) {
+                // Filter by exact academic year ID
+                $query->whereHas('classHistory', function ($q) use ($request) {
+                    $q->where('academic_year_id', $request->academic_year_id);
+                });
+            } elseif ($request->has('year')) {
+                // Filter by year (supports multiple formats)
+                $yearParam = $request->year;
+
+                if (strpos($yearParam, '-') !== false) {
+                    // Format: 2024-2025 -> convert to 2024/2025 (exact match)
+                    $academicYearPattern = str_replace('-', '/', $yearParam);
+                } else {
+                    // Format: 2024 -> match with 2024/% (tahun ajaran yang dimulai dengan 2024)
+                    $academicYearPattern = $yearParam . '/%';
+                }
+
+                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
+                    $q->where('name', 'like', $academicYearPattern);
+                });
+            }
+
+            // Filter by class
+            if ($request->has('class_id')) {
+                $query->whereHas('classHistory', function ($q) use ($request) {
+                    $q->where('class_id', $request->class_id);
+                });
+            }
+
+            // Filter by status
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Search functionality
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                      ->orWhere('nis', 'like', "%{$search}%")
+                      ->orWhere('address', 'like', "%{$search}%")
+                      ->orWhere('phone_number', 'like', "%{$search}%");
+                });
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'full_name');
+            $sortOrder = $request->get('sort_order', 'asc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $perPage = min($perPage, 100); // Max 100 items per page
+
+            $students = $query->paginate($perPage);
+
+            // Transform data to include current class info more clearly
+            $transformedData = $students->getCollection()->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'nis' => $student->nis,
+                    'full_name' => $student->full_name,
+                    'address' => $student->address,
+                    'phone_number' => $student->phone_number,
+                    'status' => $student->status,
+                    'current_class_info' => $student->current_class_info,
+                    'created_at' => $student->created_at,
+                    'updated_at' => $student->updated_at,
+                ];
+            });
+
+            $students->setCollection($transformedData);
+
+            // Add metadata
+            $metadata = [
+                'current_page' => $students->currentPage(),
+                'per_page' => $students->perPage(),
+                'total' => $students->total(),
+                'last_page' => $students->lastPage(),
+                'from' => $students->firstItem(),
+                'to' => $students->lastItem(),
+                'filters' => [
+                    'academic_year_id' => $request->academic_year_id,
+                    'year' => $request->year,
+                    'class_id' => $request->class_id,
+                    'status' => $request->status,
+                    'search' => $request->search,
+                ],
+            ];
+
+            return ApiResponse::success([
+                'data' => $students->items(),
+                'pagination' => $metadata,
+            ], 'Students retrieved successfully');
+
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch students: ' . $e->getMessage(), 500);
         }
@@ -420,7 +565,6 @@ class StudentController extends Controller
                     'address' => $columnMapping['address'] ?: 'Not found',
                     'phone' => $columnMapping['phone'] ?: 'Not found',
                     'status' => $columnMapping['status'] ?: 'Not found',
-                    'spp_base_fee' => $columnMapping['spp_base_fee'] ?: 'Not found (will use 0)',
                 ]
             ];
 
@@ -439,9 +583,6 @@ class StudentController extends Controller
                     $status = $columnMapping['status']
                         ? trim($worksheet->getCell($columnMapping['status'] . $row)->getValue() ?? 'ACTIVE')
                         : 'ACTIVE';
-                    $sppBaseFee = $columnMapping['spp_base_fee']
-                        ? trim($worksheet->getCell($columnMapping['spp_base_fee'] . $row)->getValue() ?? '0')
-                        : '0';
 
                     // Skip completely empty rows
                     if (empty($nis) && empty($fullName) && empty($address) && empty($phoneNumber)) {
@@ -450,7 +591,7 @@ class StudentController extends Controller
 
                     // Debug info for first few data rows
                     if (count($debugInfo['sample_data'] ?? []) < 3) {
-                        $debugInfo['sample_data'][] = "Row {$row}: NIS='{$nis}', Name='{$fullName}', SPP='{$sppBaseFee}'";
+                        $debugInfo['sample_data'][] = "Row {$row}: NIS='{$nis}', Name='{$fullName}'";
                     }
 
                     // Validate required fields
@@ -479,11 +620,6 @@ class StudentController extends Controller
                         $status = 'ACTIVE';
                     }
 
-                    // Clean and validate SPP base fee
-                    // Remove currency symbols and separators (Rp, ., ,)
-                    $sppBaseFee = preg_replace('/[^\d]/', '', $sppBaseFee);
-                    $sppBaseFee = empty($sppBaseFee) ? 0 : (float) $sppBaseFee;
-
                     // Create student
                     Student::create([
                         'nis' => $nis,
@@ -491,7 +627,6 @@ class StudentController extends Controller
                         'address' => $address ?: null,
                         'phone_number' => $phoneNumber ?: null,
                         'status' => $status,
-                        'spp_base_fee' => $sppBaseFee,
                     ]);
 
                     $inserted++;
@@ -603,7 +738,6 @@ class StudentController extends Controller
             'address' => null,
             'phone' => null,
             'status' => null,
-            'spp_base_fee' => null,
         ];
 
         for ($col = 1; $col <= $maxCol; $col++) {
@@ -635,9 +769,6 @@ class StudentController extends Controller
             }
             if (!$mapping['status'] && preg_match('/\b(status|state|kondisi)\b/', $normalized)) {
                 $mapping['status'] = $columnLetter;
-            }
-            if (!$mapping['spp_base_fee'] && preg_match('/\b(spp|spp\s*base|base\s*fee|spp\s*fee|biaya\s*spp|spp\s*bulanan|spp\s*bulan)\b/', $normalized)) {
-                $mapping['spp_base_fee'] = $columnLetter;
             }
         }
 
@@ -892,32 +1023,6 @@ class StudentController extends Controller
             return $this->sppCard($user->student_id, $request);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch SPP card: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Update SPP base fee for a student (Admin only)
-     */
-    public function updateSppBaseFee(UpdateSppBaseFeeRequest $request, Student $student)
-    {
-        try {
-            $validated = $request->validated();
-
-            $oldFee = $student->spp_base_fee;
-            $student->spp_base_fee = $validated['spp_base_fee'];
-            $student->save();
-
-            return ApiResponse::success([
-                'student_id' => $student->id,
-                'nis' => $student->nis,
-                'full_name' => $student->full_name,
-                'old_spp_base_fee' => $oldFee,
-                'new_spp_base_fee' => $student->spp_base_fee,
-                'note' => 'Perubahan ini hanya berlaku untuk invoice yang dibuat setelah update ini',
-            ], 'SPP base fee updated successfully');
-
-        } catch (\Exception $e) {
-            return ApiResponse::error('Failed to update SPP base fee: ' . $e->getMessage(), 500);
         }
     }
 }

@@ -95,7 +95,7 @@ class InvoiceController extends Controller
             // Generate invoice number
             $invoiceNumber = $this->generateInvoiceNumber();
 
-            // Get student data (needed for spp_base_fee)
+            // Get student data
             $student = Student::findOrFail($validated['student_id']);
 
             // Calculate total amount
@@ -103,21 +103,10 @@ class InvoiceController extends Controller
             foreach ($validated['items'] as $item) {
                 // Get amount based on priority:
                 // 1. Custom amount (manual override) - highest priority
-                // 2. SPP fee → use student's spp_base_fee (if > 0)
-                // 3. Other fees → use fee_category default_amount
+                // 2. Use fee_category default_amount
                 if (!isset($item['custom_amount'])) {
                     $feeCategory = FeeCategory::findOrFail($item['fee_category_id']);
-
-                    // Check if this is SPP fee category
-                    if (strtoupper($feeCategory->name) === 'SPP') {
-                        // Use student's custom SPP base fee if set and > 0, otherwise use default
-                        $item['custom_amount'] = ($student->spp_base_fee && $student->spp_base_fee > 0)
-                            ? $student->spp_base_fee
-                            : $feeCategory->default_amount;
-                    } else {
-                        // Use master fee category default amount
-                        $item['custom_amount'] = $feeCategory->default_amount;
-                    }
+                    $item['custom_amount'] = $feeCategory->default_amount;
                 }
                 $totalAmount += $item['custom_amount'];
             }
@@ -141,17 +130,7 @@ class InvoiceController extends Controller
             foreach ($validated['items'] as $item) {
                 if (!isset($item['custom_amount'])) {
                     $feeCategory = FeeCategory::findOrFail($item['fee_category_id']);
-
-                    // Check if this is SPP fee category
-                    if (strtoupper($feeCategory->name) === 'SPP') {
-                        // Use student's custom SPP base fee if set and > 0, otherwise use default
-                        $item['custom_amount'] = ($student->spp_base_fee && $student->spp_base_fee > 0)
-                            ? $student->spp_base_fee
-                            : $feeCategory->default_amount;
-                    } else {
-                        // Use master fee category default amount
-                        $item['custom_amount'] = $feeCategory->default_amount;
-                    }
+                    $item['custom_amount'] = $feeCategory->default_amount;
                 }
 
                 InvoiceItem::create([
@@ -788,7 +767,6 @@ class InvoiceController extends Controller
 
     /**
      * Generate SPP invoices for a specific month
-     * Menggunakan spp_base_fee dari student
      */
     public function generateMonthlySpp(GenerateMonthlySppRequest $request)
     {
@@ -838,8 +816,8 @@ class InvoiceController extends Controller
                     continue;
                 }
 
-                // Calculate amount: prioritize spp_base_fee, fallback to fee_category default
-                $amount = $this->calculateSppAmount($student, $sppCategory);
+                // Use fee category default amount
+                $amount = $sppCategory->default_amount;
 
                 // Generate invoice
                 $monthName = $this->getIndonesianMonthName($validated['period_month']);
@@ -936,7 +914,6 @@ class InvoiceController extends Controller
                     'id' => $student->id,
                     'nis' => $student->nis,
                     'full_name' => $student->full_name,
-                    'spp_base_fee' => $student->spp_base_fee,
                 ],
                 'academic_year' => [
                     'id' => $academicYear->id,
@@ -992,7 +969,7 @@ class InvoiceController extends Controller
                     continue;
                 }
 
-                $amount = $this->calculateSppAmount($student, $sppCategory);
+                $amount = $sppCategory->default_amount;
                 $monthName = $this->getIndonesianMonthName($monthData['month']);
 
                 $invoice = Invoice::create([
@@ -1040,25 +1017,6 @@ class InvoiceController extends Controller
     // ========================================
     // PRIVATE HELPER METHODS
     // ========================================
-
-    /**
-     * Calculate SPP amount: prioritize student spp_base_fee
-     */
-    private function calculateSppAmount($student, $feeCategory, $customAmount = null)
-    {
-        // 1. Priority: Custom amount (manual override)
-        if ($customAmount !== null && $customAmount > 0) {
-            return $customAmount;
-        }
-
-        // 2. Priority: Student's spp_base_fee (if set)
-        if ($student->spp_base_fee > 0) {
-            return $student->spp_base_fee;
-        }
-
-        // 3. Fallback: Fee category default amount
-        return $feeCategory->default_amount;
-    }
 
     /**
      * Get student IDs based on class or specific students

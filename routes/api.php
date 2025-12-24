@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Student routes
     Route::prefix('students')->group(function () {
         Route::get('/', [StudentController::class, 'index']); // List students
+        Route::get('/paginate', [StudentController::class, 'paginate']); // Paginated students with filters
         Route::post('/', [StudentController::class, 'store'])->middleware('role:admin'); // Create student
         Route::get('/{student}', [StudentController::class, 'show']); // Show student detail
         Route::put('/{student}', [StudentController::class, 'update'])->middleware('role:admin'); // Update student
@@ -50,9 +51,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/bulk-promote', [StudentController::class, 'bulkPromote'])->middleware('role:admin');
         Route::post('/{student}/create-user', [StudentController::class, 'createUserAccount'])->middleware('role:admin');
         Route::post('/import', [StudentController::class, 'import'])->middleware('role:admin');
-
-        // SPP Base Fee Management (Admin only)
-        Route::put('/{student}/spp-base-fee', [StudentController::class, 'updateSppBaseFee'])->middleware('role:admin');
 
         // SPP Card (Kartu SPP Digital)
         Route::get('/{student}/spp-card', [StudentController::class, 'sppCard']); // SPP card for specific student
