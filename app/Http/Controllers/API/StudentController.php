@@ -115,6 +115,49 @@ class StudentController extends Controller
         }
     }
 
+        /**
+     * Search students by name or NIS with academic year validation
+     * Endpoint: /api/students/search
+     * Query params:
+     *   - search: string (name or NIS, required)
+     *   - academic_year_id: int (optional, default: active year)
+     *   - per_page: int (optional, default: 15)
+     */
+    public function search(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string|max:255',
+            'academic_year_id' => 'nullable|exists:academic_years,id',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $search = $request->search;
+        $academicYearId = $request->academic_year_id;
+
+        // Jika academic_year_id tidak dikirim, ambil tahun ajar aktif
+        if (!$academicYearId) {
+            $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+            if (!$activeYear) {
+                return ApiResponse::error('Tidak ada tahun ajar aktif', 422);
+            }
+            $academicYearId = $activeYear->id;
+        }
+
+        $query = Student::query();
+        $query->whereHas('classHistory', function ($q) use ($academicYearId) {
+            $q->where('academic_year_id', $academicYearId);
+        });
+        $query->where(function ($q) use ($search) {
+            $q->where('full_name', 'like', "%{$search}%")
+              ->orWhere('nis', 'like', "%{$search}%");
+        });
+
+        $perPage = $request->get('per_page', 15);
+        $students = $query->paginate($perPage);
+
+        return ApiResponse::success($students, 'Search result');
+    }
+
     /**
      * Get paginated students list with customizable parameters
      *

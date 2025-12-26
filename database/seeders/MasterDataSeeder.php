@@ -17,7 +17,7 @@ class MasterDataSeeder extends Seeder
     {
         // Seed Academic Year
         AcademicYear::create([
-            'name' => '2024/2025',
+            'name' => '2025/2026',
             'is_active' => true,
         ]);
 
