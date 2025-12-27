@@ -686,31 +686,55 @@ class StudentSeeder extends Seeder
             $student = Student::create([
                 'nis' => $studentData['nis'],
                 'full_name' => $studentData['full_name'],
-                'address' => $studentData['address'],
-                'phone_number' => $studentData['phone_number'],
+                'address' => $studentData['address'] ?? null,
+                'phone_number' => $studentData['phone_number'] ?? null,
                 'status' => $studentData['status'],
             ]);
 
-            // Assign ke kelas dan tahun ajaran aktif
-            $kelasObj = null;
-            if ($studentData['kelas'] === 'Kelas 6.1') $kelasObj = $kelas61;
-            elseif ($studentData['kelas'] === 'Kelas 6.2') $kelasObj = $kelas62;
-            elseif ($studentData['kelas'] === 'Kelas 5.1') $kelasObj = $kelas51;
-            elseif ($studentData['kelas'] === 'Kelas 5.2') $kelasObj = $kelas52;
-            elseif ($studentData['kelas'] === 'Kelas 4.1') $kelasObj = $kelas41;
-            elseif ($studentData['kelas'] === 'Kelas 4.2') $kelasObj = $kelas42;
-            elseif ($studentData['kelas'] === 'Kelas 3.1') $kelasObj = $kelas31;
-            elseif ($studentData['kelas'] === 'Kelas 3.2') $kelasObj = $kelas32;
-            elseif ($studentData['kelas'] === 'Kelas 2.1') $kelasObj = $kelas21;
-            elseif ($studentData['kelas'] === 'Kelas 2.2') $kelasObj = $kelas22;
-            elseif ($studentData['kelas'] === 'Kelas 1.1') $kelasObj = $kelas11;
-            elseif ($studentData['kelas'] === 'Kelas 1.2') $kelasObj = $kelas12;
-            if ($kelasObj && $academicYear) {
-                StudentClassHistory::create([
-                    'student_id' => $student->id,
-                    'class_id' => $kelasObj->id,
-                    'academic_year_id' => $academicYear->id,
-                ]);
+            // Deteksi tahun masuk dan kelas terakhir
+            $nis = (int)$studentData['nis'];
+            $kelasAkhir = $studentData['kelas'];
+            $kelasAkhirLevel = 1;
+            $kelasSuffix = '1';
+            if (preg_match('/Kelas (\d)\.(\d)/', $kelasAkhir, $m)) {
+                $kelasAkhirLevel = (int)$m[1];
+                $kelasSuffix = $m[2];
+            }
+            // Batasi level maksimal 6
+            if ($kelasAkhirLevel > 6) $kelasAkhirLevel = 6;
+            // Alumni 2018: tahun masuk 2018/2019, alumni 2019: 2019/2020, dst
+            if ($nis >= 2018001 && $nis < 2019000) {
+                $tahunMasuk = 2018;
+            } elseif ($nis >= 2019001 && $nis < 2020000) {
+                $tahunMasuk = 2019;
+            } elseif ($nis >= 2020001 && $nis < 2021000) {
+                $tahunMasuk = 2020;
+            } elseif ($nis >= 2021001 && $nis < 2022000) {
+                $tahunMasuk = 2021;
+            } elseif ($nis >= 2022001 && $nis < 2023000) {
+                $tahunMasuk = 2022;
+            } elseif ($nis >= 2023001 && $nis < 2024000) {
+                $tahunMasuk = 2023;
+            } elseif ($nis >= 2024001 && $nis < 2025000) {
+                $tahunMasuk = 2024;
+            } else {
+                // Siswa aktif: fallback ke tahun ajar aktif
+                $tahunAjarAktif = 2025;
+                $tahunMasuk = $tahunAjarAktif - ($kelasAkhirLevel - 1);
+            }
+            // Buat class history kelas 1 s/d kelas akhir
+            for ($i = 1; $i <= $kelasAkhirLevel; $i++) {
+                $tahun = $tahunMasuk + ($i - 1);
+                $academicYearObj = AcademicYear::where('name', $tahun . '/' . ($tahun + 1))->first();
+                $kelasNama = 'Kelas ' . $i . '.' . $kelasSuffix;
+                $kelasObj = Classes::where('name', $kelasNama)->first();
+                if ($kelasObj && $academicYearObj) {
+                    StudentClassHistory::create([
+                        'student_id' => $student->id,
+                        'class_id' => $kelasObj->id,
+                        'academic_year_id' => $academicYearObj->id,
+                    ]);
+                }
             }
         }
 

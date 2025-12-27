@@ -56,7 +56,7 @@ class Student extends Model
     public function currentClass()
     {
         return $this->belongsTo(StudentClassHistory::class, 'id', 'student_id')
-            ->with(['class.academicYear', 'academicYear'])
+            ->with(['class', 'academicYear'])
             ->latest('academic_year_id')
             ->limit(1);
     }

@@ -37,17 +37,8 @@ class AcademicYearController extends Controller
             $sortOrder = $request->get('sort_order', 'desc');
             $query->orderBy($sortBy, $sortOrder);
 
-            // Check if pagination is requested (default: yes)
-            if ($request->get('paginate', true) === 'false' || $request->get('paginate') === false) {
-                // Return all without pagination
-                $academicYears = $query->get();
-                return ApiResponse::success($academicYears, 'List of academic years');
-            }
-
-            // Pagination
-            $perPage = $request->get('per_page', 15);
-            $academicYears = $query->paginate($perPage);
-
+            // Selalu return semua data tanpa pagination
+            $academicYears = $query->get();
             return ApiResponse::success($academicYears, 'List of academic years');
         } catch (\Exception $e) {
             Log::error('Failed to fetch academic years: ' . $e->getMessage());

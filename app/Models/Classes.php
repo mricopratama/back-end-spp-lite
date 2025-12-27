@@ -32,4 +32,19 @@ class Classes extends Model
             ->withPivot('academic_year_id')
             ->withTimestamps();
     }
+
+     /**
+     * Get all academic years associated with this class through student class histories.
+     */
+    public function academicYears()
+    {
+        return $this->hasManyThrough(
+            \App\Models\AcademicYear::class,
+            \App\Models\StudentClassHistory::class,
+            'class_id', // Foreign key on StudentClassHistory
+            'id',       // Foreign key on AcademicYear
+            'id',       // Local key on Classes
+            'academic_year_id' // Local key on StudentClassHistory
+        )->distinct();
+    }
 }

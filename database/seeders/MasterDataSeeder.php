@@ -15,11 +15,15 @@ class MasterDataSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed Academic Year
-        AcademicYear::create([
-            'name' => '2025/2026',
-            'is_active' => true,
-        ]);
+        // Seed Academic Year 2018/2019 s.d. 2025/2026
+        $firstYear = 2018;
+        $lastYear = 2025;
+        for ($y = $firstYear; $y <= $lastYear; $y++) {
+            AcademicYear::create([
+                'name' => $y . '/' . ($y + 1),
+                'is_active' => ($y == $lastYear),
+            ]);
+        }
 
         // Seed Classes (SD Level 1-6)
         $classes = [

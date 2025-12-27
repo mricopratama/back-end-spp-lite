@@ -128,25 +128,53 @@ class StudentController extends Controller
         $request->validate([
             'search' => 'required|string|max:255',
             'academic_year_id' => 'nullable|exists:academic_years,id',
+            'year' => ['nullable', 'string', 'regex:/^\d{4}(-|\/)\d{4}$|^\d{4}$/'],
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         $search = $request->search;
         $academicYearId = $request->academic_year_id;
+        $yearParam = $request->year;
 
-        // Jika academic_year_id tidak dikirim, ambil tahun ajar aktif
-        if (!$academicYearId) {
+        $query = Student::query();
+
+        // Filter academic year
+        if ($academicYearId) {
+            $query->whereHas('classHistory', function ($q) use ($academicYearId) {
+                $q->where('academic_year_id', $academicYearId);
+            });
+        } elseif ($yearParam) {
+            if (strpos($yearParam, '-') !== false) {
+                // Format: 2024-2025 -> 2024/2025
+                $academicYearPattern = str_replace('-', '/', $yearParam);
+                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
+                    $q->where('name', $academicYearPattern);
+                });
+            } elseif (strpos($yearParam, '/') !== false) {
+                // Format: 2024/2025 (exact match)
+                $academicYearPattern = $yearParam;
+                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
+                    $q->where('name', $academicYearPattern);
+                });
+            } else {
+                // Format: 2024 -> 2024/%
+                $academicYearPattern = $yearParam . '/%';
+                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
+                    $q->where('name', 'like', $academicYearPattern);
+                });
+            }
+        } else {
+            // Default: tahun ajar aktif
             $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
             if (!$activeYear) {
                 return ApiResponse::error('Tidak ada tahun ajar aktif', 422);
             }
             $academicYearId = $activeYear->id;
+            $query->whereHas('classHistory', function ($q) use ($academicYearId) {
+                $q->where('academic_year_id', $academicYearId);
+            });
         }
 
-        $query = Student::query();
-        $query->whereHas('classHistory', function ($q) use ($academicYearId) {
-            $q->where('academic_year_id', $academicYearId);
-        });
         $query->where(function ($q) use ($search) {
             $q->where('full_name', 'like', "%{$search}%")
               ->orWhere('nis', 'like', "%{$search}%");
@@ -182,7 +210,8 @@ class StudentController extends Controller
                 'page' => 'nullable|integer|min:1',
                 'per_page' => 'nullable|integer|min:1|max:100',
                 'academic_year_id' => 'nullable|exists:academic_years,id',
-                'year' => 'nullable|string|regex:/^\d{4}(-\d{4})?$/',
+                // year: 2024, 2024-2025, atau 2024/2025
+                'year' => ['nullable', 'string', 'regex:/^\d{4}(-|\/)\d{4}$|^\d{4}$/'],
                 'class_id' => 'nullable|exists:classes,id',
                 'status' => 'nullable|in:active,inactive,graduated,dropped',
                 'search' => 'nullable|string|max:255',
@@ -213,17 +242,27 @@ class StudentController extends Controller
                 // Filter by year (supports multiple formats)
                 $yearParam = $request->year;
 
+                // Ubah format 2024-2025 atau 2024/2025 menjadi 2024/2025 (exact match),
+                // dan 2024 menjadi 2024/%
                 if (strpos($yearParam, '-') !== false) {
-                    // Format: 2024-2025 -> convert to 2024/2025 (exact match)
+                    // Format: 2024-2025 -> 2024/2025
                     $academicYearPattern = str_replace('-', '/', $yearParam);
+                    $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
+                        $q->where('name', $academicYearPattern);
+                    });
+                } elseif (strpos($yearParam, '/') !== false) {
+                    // Format: 2024/2025 (exact match)
+                    $academicYearPattern = $yearParam;
+                    $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
+                        $q->where('name', $academicYearPattern);
+                    });
                 } else {
-                    // Format: 2024 -> match with 2024/% (tahun ajaran yang dimulai dengan 2024)
+                    // Format: 2024 -> 2024/%
                     $academicYearPattern = $yearParam . '/%';
+                    $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
+                        $q->where('name', 'like', $academicYearPattern);
+                    });
                 }
-
-                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
-                    $q->where('name', 'like', $academicYearPattern);
-                });
             }
 
             // Filter by class
@@ -261,6 +300,7 @@ class StudentController extends Controller
             $students = $query->paginate($perPage);
 
             // Transform data to include current class info more clearly
+
             $transformedData = $students->getCollection()->map(function ($student) {
                 return [
                     'id' => $student->id,
@@ -269,7 +309,7 @@ class StudentController extends Controller
                     'address' => $student->address,
                     'phone_number' => $student->phone_number,
                     'status' => $student->status,
-                    'current_class_info' => $student->current_class_info,
+                    'current_class' => $student->current_class_info,
                     'created_at' => $student->created_at,
                     'updated_at' => $student->updated_at,
                 ];
