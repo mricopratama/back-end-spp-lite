@@ -22,7 +22,7 @@ class StorePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'invoice_id' => 'required|exists:invoices,id',
+            'invoice_item_id' => 'required|exists:invoice_items,id',
             'amount' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
             'payment_method' => 'required|in:CASH,TRANSFER',
@@ -36,8 +36,8 @@ class StorePaymentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'invoice_id.required' => 'Invoice ID wajib diisi',
-            'invoice_id.exists' => 'Invoice tidak ditemukan',
+            'invoice_item_id.required' => 'Invoice Item ID wajib diisi',
+            'invoice_item_id.exists' => 'Invoice Item tidak ditemukan',
             'amount.required' => 'Jumlah pembayaran wajib diisi',
             'amount.numeric' => 'Jumlah pembayaran harus berupa angka',
             'amount.min' => 'Jumlah pembayaran minimal 0',

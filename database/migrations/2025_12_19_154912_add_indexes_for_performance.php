@@ -19,11 +19,10 @@ return new class extends Migration
         });
 
         // Invoices table indexes
-        Schema::table('invoices', function (Blueprint $table) {
-            $table->index('status', 'idx_invoices_status');
-            $table->index('due_date', 'idx_invoices_due_date');
-            $table->index(['student_id', 'status'], 'idx_invoices_student_status');
-            $table->index(['academic_year_id', 'status'], 'idx_invoices_year_status');
+        Schema::table('invoice_items', function (Blueprint $table) {
+            $table->index('status', 'idx_invoice_items_status');
+            $table->index(['student_id', 'status'], 'idx_invoice_items_student_status');
+            $table->index(['academic_year_id', 'status'], 'idx_invoice_items_year_status');
         });
 
         // Payments table indexes
@@ -66,11 +65,10 @@ return new class extends Migration
         });
 
         // Drop invoices indexes
-        Schema::table('invoices', function (Blueprint $table) {
-            $table->dropIndex('idx_invoices_status');
-            $table->dropIndex('idx_invoices_due_date');
-            $table->dropIndex('idx_invoices_student_status');
-            $table->dropIndex('idx_invoices_year_status');
+        Schema::table('invoice_items', function (Blueprint $table) {
+            $table->dropIndex('idx_invoice_items_status');
+            $table->dropIndex('idx_invoice_items_student_status');
+            $table->dropIndex('idx_invoice_items_year_status');
         });
 
         // Drop payments indexes

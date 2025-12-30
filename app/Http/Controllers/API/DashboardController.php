@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
-use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
@@ -39,13 +39,13 @@ class DashboardController extends Controller
             $activeStudentsCount = Student::where('status', 'ACTIVE')->count();
 
             // Paid invoice percentage
-            $totalInvoices = Invoice::count();
-            $paidInvoices = Invoice::where('status', 'PAID')->count();
+            $totalInvoices = InvoiceItem::count();
+            $paidInvoices = InvoiceItem::where('status', 'PAID')->count();
             $paidPercentage = $totalInvoices > 0 ? round(($paidInvoices / $totalInvoices) * 100, 2) : 0;
 
             // Total outstanding amount (unpaid + partial)
-            $totalOutstanding = Invoice::whereIn('status', ['UNPAID', 'PARTIAL'])
-                ->sum(DB::raw('total_amount - paid_amount'));
+            $totalOutstanding = InvoiceItem::whereIn('status', ['UNPAID', 'PARTIAL'])
+                ->sum(DB::raw('amount - paid_amount'));
 
             // Recent payments (last 10)
             $recentPayments = Payment::with(['invoice.student'])
@@ -63,10 +63,10 @@ class DashboardController extends Controller
                 });
 
             // Unpaid invoices count
-            $unpaidInvoicesCount = Invoice::where('status', 'UNPAID')->count();
+            $unpaidInvoicesCount = InvoiceItem::where('status', 'UNPAID')->count();
 
             // Partial invoices count
-            $partialInvoicesCount = Invoice::where('status', 'PARTIAL')->count();
+            $partialInvoicesCount = InvoiceItem::where('status', 'PARTIAL')->count();
 
             return ApiResponse::success([
                 'total_income_today' => (float) $totalIncomeToday,
@@ -104,17 +104,17 @@ class DashboardController extends Controller
                 ->findOrFail($user->student_id);
 
             // Total outstanding amount
-            $totalOutstanding = Invoice::where('student_id', $student->id)
+            $totalOutstanding = InvoiceItem::where('student_id', $student->id)
                 ->whereIn('status', ['UNPAID', 'PARTIAL'])
                 ->sum(DB::raw('total_amount - paid_amount'));
 
             // Unpaid invoices count
-            $unpaidInvoicesCount = Invoice::where('student_id', $student->id)
+            $unpaidInvoicesCount = InvoiceItem::where('student_id', $student->id)
                 ->where('status', 'UNPAID')
                 ->count();
 
             // Partial invoices count
-            $partialInvoicesCount = Invoice::where('student_id', $student->id)
+            $partialInvoicesCount = InvoiceItem::where('student_id', $student->id)
                 ->where('status', 'PARTIAL')
                 ->count();
 
@@ -126,8 +126,8 @@ class DashboardController extends Controller
                 ->first();
 
             // Recent invoices (last 5)
-            $recentInvoices = Invoice::where('student_id', $student->id)
-                ->with(['items.feeCategory', 'academicYear'])
+            $recentInvoices = InvoiceItem::where('student_id', $student->id)
+                ->with(['feeCategory', 'academicYear'])
                 ->orderBy('created_at', 'desc')
                 ->limit(5)
                 ->get()

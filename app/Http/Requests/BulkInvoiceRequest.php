@@ -22,16 +22,13 @@ class BulkInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'nullable|string|max:255',
             'class_id' => 'nullable|exists:classes,id',
             'student_ids' => 'nullable|array',
             'student_ids.*' => 'exists:students,id',
             'academic_year_id' => 'required|exists:academic_years,id',
-            'due_date' => 'required|date',
-            'items' => 'required|array|min:1',
-            'items.*.fee_category_id' => 'required|exists:fee_categories,id',
-            'items.*.description' => 'required|string|max:255',
-            'items.*.custom_amount' => 'nullable|numeric|min:0',
+            'fee_category_id' => 'required|exists:fee_categories,id',
+            'amount' => 'nullable|numeric|min:0',
+            'period_month' => 'required|integer|min:1|max:12',
         ];
     }
 
@@ -42,9 +39,13 @@ class BulkInvoiceRequest extends FormRequest
     {
         return [
             'academic_year_id.required' => 'Tahun ajaran wajib diisi',
-            'due_date.required' => 'Tanggal jatuh tempo wajib diisi',
-            'items.required' => 'Items invoice wajib diisi',
-            'items.min' => 'Minimal 1 item invoice',
+            'fee_category_id.required' => 'Kategori biaya wajib diisi',
+            'fee_category_id.exists' => 'Kategori biaya tidak ditemukan',
+            'amount.numeric' => 'Nominal harus berupa angka',
+            'amount.min' => 'Nominal minimal 0',
+            'period_month.required' => 'Bulan periode wajib diisi',
+            'period_month.min' => 'Bulan periode minimal 1 (Januari)',
+            'period_month.max' => 'Bulan periode maksimal 12 (Desember)',
         ];
     }
 

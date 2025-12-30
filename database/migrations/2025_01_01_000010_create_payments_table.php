@@ -18,7 +18,7 @@ return new class extends Migration
             $table->date('payment_date');
             $table->enum('payment_method', ['CASH', 'TRANSFER'])->default('CASH');
             $table->text('notes')->nullable();
-            $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
+            $table->foreignId('invoice_item_id')->constrained('invoice_items')->cascadeOnDelete();
             $table->foreignId('processed_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });

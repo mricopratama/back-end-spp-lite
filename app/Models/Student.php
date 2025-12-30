@@ -72,11 +72,11 @@ class Student extends Model
     }
 
     /**
-     * Get all invoices for this student.
+     * Get all invoice items for this student.
      */
-    public function invoices(): HasMany
+    public function invoice_items(): HasMany
     {
-        return $this->hasMany(Invoice::class);
+        return $this->hasMany(InvoiceItem::class);
     }
 
     /**

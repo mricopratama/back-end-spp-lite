@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Helpers\ApiResponse;
 use App\Models\Notification;
@@ -29,19 +29,19 @@ class PaymentController extends Controller
             $query->select('payments.*');
 
             // Eager load relationships to prevent N+1
-            $query->with([
-                'invoice:id,invoice_number,student_id,academic_year_id,total_amount,paid_amount,status',
-                'invoice.student:id,nis,full_name',
-                'invoice.academicYear:id,name',
-                'processedBy:id,full_name'
-            ]);
+                $query->with([
+                    'invoiceItem:id,invoice_number,student_id,academic_year_id,total_amount,paid_amount,status',
+                    'invoiceItem.student:id,nis,full_name',
+                    'invoiceItem.academicYear:id,name',
+                    'processedBy:id,full_name'
+                ]);
 
             // If user is student, only return their own payments
             if ($user->role->name === 'student') {
                 if (!$user->student_id) {
                     return ApiResponse::error('Student record not found', 404);
                 }
-                $query->whereHas('invoice', function ($q) use ($user) {
+                $query->whereHas('invoiceItem', function ($q) use ($user) {
                     $q->where('student_id', $user->student_id);
                 });
             }
@@ -66,14 +66,14 @@ class PaymentController extends Controller
 
             // Filter by student
             if ($request->has('student_id')) {
-                $query->whereHas('invoice', function ($q) use ($request) {
+                $query->whereHas('invoiceItem', function ($q) use ($request) {
                     $q->where('student_id', $request->student_id);
                 });
             }
 
             // Filter by academic year
             if ($request->has('academic_year_id')) {
-                $query->whereHas('invoice', function ($q) use ($request) {
+                $query->whereHas('invoiceItem', function ($q) use ($request) {
                     $q->where('academic_year_id', $request->academic_year_id);
                 });
             }
@@ -92,16 +92,16 @@ class PaymentController extends Controller
             }
 
             // Search by receipt number or student name or NIS
-            if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('receipt_number', 'like', "%{$search}%")
-                      ->orWhereHas('invoice.student', function ($sq) use ($search) {
-                          $sq->where('full_name', 'like', "%{$search}%")
-                            ->orWhere('nis', 'like', "%{$search}%");
-                      });
-                });
-            }
+                        if ($request->has('search')) {
+                                $search = $request->search;
+                                $query->where(function ($q) use ($search) {
+                                        $q->where('receipt_number', 'like', "%{$search}%")
+                                            ->orWhereHas('invoiceItem.student', function ($sq) use ($search) {
+                                                    $sq->where('full_name', 'like', "%{$search}%")
+                                                        ->orWhere('nis', 'like', "%{$search}%");
+                                            });
+                                });
+                        }
 
             // Sorting
             $sortBy = $request->get('sort_by', 'payment_date');
@@ -136,10 +136,10 @@ class PaymentController extends Controller
             $validated = $request->validated();
 
             // Get invoice
-            $invoice = Invoice::with(['student', 'items.feeCategory'])->findOrFail($validated['invoice_id']);
+            $invoiceItem = InvoiceItem::with(['student', 'feeCategory'])->findOrFail($validated['invoice_item_id']);
 
             // Calculate remaining amount
-            $remainingAmount = $invoice->total_amount - $invoice->paid_amount;
+            $remainingAmount = $invoiceItem->amount - $invoiceItem->paid_amount;
 
             // Prevent overpayment
             if ($validated['amount'] > $remainingAmount) {
@@ -161,28 +161,25 @@ class PaymentController extends Controller
                 'payment_date' => $validated['payment_date'],
                 'payment_method' => $validated['payment_method'],
                 'notes' => $validated['notes'] ?? null,
-                'invoice_id' => $invoice->id,
+                'invoice_item_id' => $invoiceItem->id,
                 'processed_by' => Auth::id(),
             ]);
 
             // Update invoice paid_amount
-            $newPaidAmount = $invoice->paid_amount + $paymentAmount;
-
-            $invoice->paid_amount = $newPaidAmount;
-
-            // Update invoice status
-            if ($newPaidAmount >= $invoice->total_amount) {
-                $invoice->status = 'paid';
+            $newPaidAmount = $invoiceItem->paid_amount + $paymentAmount;
+            $invoiceItem->paid_amount = $newPaidAmount;
+            // Update status
+            if ($newPaidAmount >= $invoiceItem->amount) {
+                $invoiceItem->status = 'paid';
             } elseif ($newPaidAmount > 0) {
-                $invoice->status = 'partial';
+                $invoiceItem->status = 'partial';
             } else {
-                $invoice->status = 'unpaid';
+                $invoiceItem->status = 'unpaid';
             }
-
-            $invoice->save();
+            $invoiceItem->save();
 
             // Create notification for student
-            $this->createPaymentNotification($invoice, $payment);
+            $this->createPaymentNotification($invoiceItem, $payment);
 
             DB::commit();
 
@@ -194,13 +191,13 @@ class PaymentController extends Controller
                     'payment_method' => $payment->payment_method,
                     'payment_date' => $payment->payment_date,
                 ],
-                'invoice' => [
-                    'invoice_number' => $invoice->invoice_number,
-                    'student_name' => $invoice->student->full_name,
-                    'total_amount' => $invoice->total_amount,
-                    'paid_amount' => $invoice->paid_amount,
-                    'remaining_amount' => $invoice->total_amount - $invoice->paid_amount,
-                    'status' => $invoice->status,
+                'invoice_item' => [
+                    'id' => $invoiceItem->id,
+                    'student_name' => $invoiceItem->student->full_name,
+                    'amount' => $invoiceItem->amount,
+                    'paid_amount' => $invoiceItem->paid_amount,
+                    'remaining_amount' => $invoiceItem->amount - $invoiceItem->paid_amount,
+                    'status' => $invoiceItem->status,
                 ],
             ], 'Payment recorded successfully', 201);
         } catch (\Exception $e) {
@@ -218,15 +215,15 @@ class PaymentController extends Controller
             $user = Auth::user();
 
             $payment = Payment::with([
-                'invoice.student',
-                'invoice.academicYear',
-                'invoice.items.feeCategory',
+                'invoiceItem.student',
+                'invoiceItem.academicYear',
+                'invoiceItem.feeCategory',
                 'processedBy'
             ])->findOrFail($id);
 
             // If user is student, only allow access to their own payments
             if ($user->role->name === 'student') {
-                if ($payment->invoice->student_id != $user->student_id) {
+                if ($payment->invoiceItem->student_id != $user->student_id) {
                     return ApiResponse::error('Forbidden: You can only access your own payments', 403);
                 }
             }
@@ -252,8 +249,8 @@ class PaymentController extends Controller
                 }
             }
 
-            $query = Payment::with(['invoice.student', 'invoice.items.feeCategory', 'processedBy'])
-                ->whereHas('invoice', function ($q) use ($studentId) {
+            $query = Payment::with(['invoiceItem.student', 'invoiceItem.feeCategory', 'processedBy'])
+                ->whereHas('invoiceItem', function ($q) use ($studentId) {
                     $q->where('student_id', $studentId);
                 });
 
@@ -267,7 +264,7 @@ class PaymentController extends Controller
 
             // Filter by academic year
             if ($request->has('academic_year_id')) {
-                $query->whereHas('invoice', function ($q) use ($request) {
+                $query->whereHas('invoiceItem', function ($q) use ($request) {
                     $q->where('academic_year_id', $request->academic_year_id);
                 });
             }
@@ -276,7 +273,7 @@ class PaymentController extends Controller
             $payments = $query->orderBy('payment_date', 'desc')->paginate($perPage);
 
             // Calculate summary
-            $totalPaid = Payment::whereHas('invoice', function ($q) use ($studentId) {
+            $totalPaid = Payment::whereHas('invoiceItem', function ($q) use ($studentId) {
                 $q->where('student_id', $studentId);
             })->sum('amount');
 
@@ -299,11 +296,10 @@ class PaymentController extends Controller
     {
         try {
             $query = Payment::query();
-
             $query->with([
-                'invoice:id,invoice_number,student_id,academic_year_id,total_amount,paid_amount,status',
-                'invoice.student:id,nis,full_name',
-                'invoice.academicYear:id,name',
+                'invoiceItem:id,student_id,academic_year_id,amount,paid_amount,status',
+                'invoiceItem.student:id,nis,full_name',
+                'invoiceItem.academicYear:id,name',
                 'processedBy:id,full_name'
             ]);
 
@@ -319,13 +315,13 @@ class PaymentController extends Controller
             }
 
             if ($request->has('student_id')) {
-                $query->whereHas('invoice', function ($q) use ($request) {
+                $query->whereHas('invoiceItem', function ($q) use ($request) {
                     $q->where('student_id', $request->student_id);
                 });
             }
 
             if ($request->has('academic_year_id')) {
-                $query->whereHas('invoice', function ($q) use ($request) {
+                $query->whereHas('invoiceItem', function ($q) use ($request) {
                     $q->where('academic_year_id', $request->academic_year_id);
                 });
             }
@@ -358,7 +354,7 @@ class PaymentController extends Controller
                     $q->where('payment_method', $request->payment_method);
                 })
                 ->when($request->has('student_id'), function ($q) use ($request) {
-                    $q->whereHas('invoice', function ($query) use ($request) {
+                    $q->whereHas('invoiceItem', function ($query) use ($request) {
                         $query->where('student_id', $request->student_id);
                     });
                 })
@@ -388,7 +384,6 @@ class PaymentController extends Controller
             if (!$user->student_id) {
                 return ApiResponse::error('User is not associated with a student', 403);
             }
-
             return $this->studentHistory($request, $user->student_id);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch payment history: ' . $e->getMessage(), 500);
@@ -423,16 +418,16 @@ class PaymentController extends Controller
     /**
      * Create notification for payment success
      */
-    private function createPaymentNotification($invoice, $payment)
+    private function createPaymentNotification($invoiceItem, $payment)
     {
         try {
             // Get user associated with student
-            $student = $invoice->student;
+            $student = $invoiceItem->student;
             if ($student->user) {
                 Notification::create([
                     'user_id' => $student->user->id,
                     'title' => 'Pembayaran Berhasil',
-                    'message' => "Pembayaran sebesar Rp " . number_format($payment->amount, 0, ',', '.') . " untuk invoice {$invoice->invoice_number} telah berhasil dicatat.",
+                    'message' => "Pembayaran sebesar Rp " . number_format($payment->amount, 0, ',', '.') . " untuk invoice item #{$invoiceItem->id} telah berhasil dicatat.",
                     'type' => 'PAYMENT_SUCCESS',
                     'is_read' => false,
                 ]);
@@ -452,15 +447,15 @@ class PaymentController extends Controller
 
         // If user is student, only allow access to their own receipts
         if ($user->role->name === 'student') {
-            if ($payment->invoice->student_id != $user->student_id) {
+            if ($payment->invoiceItem->student_id != $user->student_id) {
                 return ApiResponse::error('Forbidden: You can only print your own receipts', 403);
             }
         }
 
         $payment->load([
-            'invoice.student',
-            'invoice.academicYear',
-            'invoice.items.feeCategory',
+            'invoiceItem.student',
+            'invoiceItem.academicYear',
+            'invoiceItem.feeCategory',
             'processedBy'
         ]);
 
@@ -470,30 +465,23 @@ class PaymentController extends Controller
                 'payment_date' => $payment->payment_date->format('d/m/Y'),
                 'payment_time' => $payment->created_at->format('H:i:s'),
                 'amount' => $payment->amount,
-                'amount_formatted' => 'Rp ' . number_format($payment->amount, 0, ',', '.'),
+                'amount_formatted' => 'Rp ' . number_format((float)($payment->amount ?? 0), 0, ',', '.'),
                 'payment_method' => $payment->payment_method,
                 'notes' => $payment->notes,
             ],
             'student' => [
-                'nis' => $payment->invoice->student->nis,
-                'name' => $payment->invoice->student->full_name,
-                'address' => $payment->invoice->student->address,
+                'nis' => $payment->invoiceItem->student->nis,
+                'name' => $payment->invoiceItem->student->full_name,
+                'address' => $payment->invoiceItem->student->address,
             ],
-            'invoice' => [
-                'invoice_number' => $payment->invoice->invoice_number,
-                'title' => $payment->invoice->title,
-                'academic_year' => $payment->invoice->academicYear->name,
-                'total_amount' => $payment->invoice->total_amount,
-                'paid_amount' => $payment->invoice->paid_amount,
-                'remaining_amount' => $payment->invoice->total_amount - $payment->invoice->paid_amount,
-                'status' => $payment->invoice->status,
-                'items' => $payment->invoice->items->map(function ($item) {
-                    return [
-                        'fee_category' => $item->feeCategory->name,
-                        'description' => $item->description,
-                        'amount' => $item->amount,
-                    ];
-                }),
+            'invoice_item' => [
+                'id' => $payment->invoiceItem->id,
+                'academic_year' => $payment->invoiceItem->academicYear->name,
+                'amount' => $payment->invoiceItem->amount,
+                'paid_amount' => $payment->invoiceItem->paid_amount,
+                'remaining_amount' => $payment->invoiceItem->amount - $payment->invoiceItem->paid_amount,
+                'status' => $payment->invoiceItem->status,
+                'fee_category' => $payment->invoiceItem->feeCategory->name,
             ],
             'processed_by' => $payment->processedBy ? $payment->processedBy->full_name : null,
             'print_date' => now()->format('d/m/Y H:i:s'),
@@ -509,42 +497,36 @@ class PaymentController extends Controller
             DB::beginTransaction();
 
             // Get invoice before deleting payment
-            $invoice = Invoice::findOrFail($payment->invoice_id);
+            $invoiceItem = InvoiceItem::findOrFail($payment->invoice_item_id);
 
             // Store payment amount for invoice update
             $paymentAmount = $payment->amount;
-
             // Delete payment
             $payment->delete();
-
-            // Update invoice paid_amount
-            $invoice->paid_amount = $invoice->paid_amount - $paymentAmount;
-
-            // Ensure paid_amount doesn't go negative
-            if ($invoice->paid_amount < 0) {
-                $invoice->paid_amount = 0;
+            // Update invoice item paid_amount
+            $invoiceItem->paid_amount = $invoiceItem->paid_amount - $paymentAmount;
+            if ($invoiceItem->paid_amount < 0) {
+                $invoiceItem->paid_amount = 0;
             }
-
-            // Update invoice status
-            if ($invoice->paid_amount >= $invoice->total_amount) {
-                $invoice->status = 'paid';
-            } elseif ($invoice->paid_amount > 0) {
-                $invoice->status = 'partial';
+            // Update status
+            if ($invoiceItem->paid_amount >= $invoiceItem->amount) {
+                $invoiceItem->status = 'paid';
+            } elseif ($invoiceItem->paid_amount > 0) {
+                $invoiceItem->status = 'partial';
             } else {
-                $invoice->status = 'unpaid';
+                $invoiceItem->status = 'unpaid';
             }
-
-            $invoice->save();
+            $invoiceItem->save();
 
             DB::commit();
 
             return ApiResponse::success([
-                'invoice' => [
-                    'invoice_number' => $invoice->invoice_number,
-                    'total_amount' => $invoice->total_amount,
-                    'paid_amount' => $invoice->paid_amount,
-                    'remaining_amount' => $invoice->total_amount - $invoice->paid_amount,
-                    'status' => $invoice->status,
+                'invoice_item' => [
+                    'id' => $invoiceItem->id,
+                    'amount' => $invoiceItem->amount,
+                    'paid_amount' => $invoiceItem->paid_amount,
+                    'remaining_amount' => $invoiceItem->amount - $invoiceItem->paid_amount,
+                    'status' => $invoiceItem->status,
                 ],
             ], 'Payment deleted successfully');
         } catch (\Exception $e) {

@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
-            $table->string('description');
+            $table->string('invoice_number');
             $table->decimal('amount', 12, 2)->default(0);
-            $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
+            $table->decimal('paid_amount', 12, 2)->default(0);
+            $table->enum('status', ['unpaid', 'partial', 'paid'])->default('unpaid');
+            $table->unsignedTinyInteger('period_month');
             $table->foreignId('fee_category_id')->constrained('fee_categories')->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
+            $table->foreignId('academic_year_id')->constrained('academic_years')->cascadeOnDelete();
             $table->timestamps();
         });
     }

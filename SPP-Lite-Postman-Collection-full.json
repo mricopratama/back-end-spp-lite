@@ -1,0 +1,121 @@
+{
+  "info": {
+    "_postman_id": "b1e1e1e1-1111-2222-3333-444455556666",
+    "name": "SPP Lite API Collection (Full)",
+    "description": "Koleksi lengkap endpoint API SPP Lite, terstruktur per modul. Gunakan environment variable {{base_url}} dan {{token}} untuk autentikasi.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    // AUTH MODULE
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Login", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}" }, "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] } }, "response": [] },
+        { "name": "Logout", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/auth/logout", "host": ["{{base_url}}"], "path": ["api", "auth", "logout"] } }, "response": [] },
+        { "name": "Profile", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/auth/profile", "host": ["{{base_url}}"], "path": ["api", "auth", "profile"] } }, "response": [] }
+      ]
+    },
+    // STUDENT MODULE
+    {
+      "name": "Student",
+      "item": [
+        { "name": "List Students", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/students", "host": ["{{base_url}}"], "path": ["api", "students"] } }, "response": [] },
+        { "name": "Show Student", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/students/1", "host": ["{{base_url}}"], "path": ["api", "students", "1"] } }, "response": [] },
+        { "name": "Create Student", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nis\": \"123456\",\n  \"full_name\": \"Nama Siswa\",\n  \"address\": \"Alamat\",\n  \"phone_number\": \"08123456789\",\n  \"status\": \"ACTIVE\"\n}" }, "url": { "raw": "{{base_url}}/api/students", "host": ["{{base_url}}"], "path": ["api", "students"] } }, "response": [] },
+        { "name": "Update Student", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"full_name\": \"Nama Siswa Update\",\n  \"address\": \"Alamat Baru\"\n}" }, "url": { "raw": "{{base_url}}/api/students/1", "host": ["{{base_url}}"], "path": ["api", "students", "1"] } }, "response": [] },
+        { "name": "Delete Student", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/students/1", "host": ["{{base_url}}"], "path": ["api", "students", "1"] } }, "response": [] },
+        { "name": "Promote Students (Bulk)", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"student_ids\": [1,2,3],\n  \"to_class_id\": 2,\n  \"to_academic_year_id\": 2\n}" }, "url": { "raw": "{{base_url}}/api/students/promote", "host": ["{{base_url}}"], "path": ["api", "students", "promote"] } }, "response": [] },
+        { "name": "Set Student Class", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"student_id\": 1,\n  \"class_id\": 2,\n  \"academic_year_id\": 2\n}" }, "url": { "raw": "{{base_url}}/api/students/set-class", "host": ["{{base_url}}"], "path": ["api", "students", "set-class"] } }, "response": [] }
+      ]
+    },
+    // INVOICE MODULE
+    {
+      "name": "Invoice",
+      "item": [
+        { "name": "List Invoices", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/invoices", "host": ["{{base_url}}"], "path": ["api", "invoices"] } }, "response": [] },
+        { "name": "Show Invoice", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/invoices/1", "host": ["{{base_url}}"], "path": ["api", "invoices", "1"] } }, "response": [] },
+        { "name": "Create Invoice", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"student_id\": 1,\n  \"amount\": 100000,\n  \"fee_category_id\": 1,\n  \"period_month\": 1,\n  \"academic_year_id\": 1\n}" }, "url": { "raw": "{{base_url}}/api/invoices", "host": ["{{base_url}}"], "path": ["api", "invoices"] } }, "response": [] },
+        { "name": "Update Invoice", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"amount\": 120000\n}" }, "url": { "raw": "{{base_url}}/api/invoices/1", "host": ["{{base_url}}"], "path": ["api", "invoices", "1"] } }, "response": [] },
+        { "name": "Delete Invoice", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/invoices/1", "host": ["{{base_url}}"], "path": ["api", "invoices", "1"] } }, "response": [] },
+        { "name": "Bulk Create Invoice", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"invoices\": [\n    {\"student_id\": 1, \"amount\": 100000, \"fee_category_id\": 1, \"period_month\": 1, \"academic_year_id\": 1}\n  ]\n}" }, "url": { "raw": "{{base_url}}/api/invoices/bulk", "host": ["{{base_url}}"], "path": ["api", "invoices", "bulk"] } }, "response": [] },
+        { "name": "Import Invoices (Excel)", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "body": { "mode": "formdata", "formdata": [ { "key": "file", "type": "file" } ] }, "url": { "raw": "{{base_url}}/api/invoices/import", "host": ["{{base_url}}"], "path": ["api", "invoices", "import"] } }, "response": [] },
+        { "name": "Monthly SPP Generation", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"academic_year_id\": 1,\n  \"class_id\": 1,\n  \"month\": 1\n}" }, "url": { "raw": "{{base_url}}/api/invoices/generate-monthly-spp", "host": ["{{base_url}}"], "path": ["api", "invoices", "generate-monthly-spp"] } }, "response": [] }
+      ]
+    },
+    // PAYMENT MODULE
+    {
+      "name": "Payment",
+      "item": [
+        { "name": "List Payments", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/payments", "host": ["{{base_url}}"], "path": ["api", "payments"] } }, "response": [] },
+        { "name": "Show Payment", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/payments/1", "host": ["{{base_url}}"], "path": ["api", "payments", "1"] } }, "response": [] },
+        { "name": "Create Payment", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"invoice_item_id\": 1,\n  \"amount\": 100000,\n  \"payment_date\": \"2025-12-30\",\n  \"payment_method\": \"CASH\",\n  \"notes\": \"Pembayaran SPP\"\n}" }, "url": { "raw": "{{base_url}}/api/payments", "host": ["{{base_url}}"], "path": ["api", "payments"] } }, "response": [] },
+        { "name": "Delete Payment", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/payments/1", "host": ["{{base_url}}"], "path": ["api", "payments", "1"] } }, "response": [] },
+        { "name": "Print Receipt", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/payments/1/print", "host": ["{{base_url}}"], "path": ["api", "payments", "1", "print"] } }, "response": [] }
+      ]
+    },
+    // REPORT MODULE
+    {
+      "name": "Report",
+      "item": [
+        { "name": "Arrears Report", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/reports/arrears", "host": ["{{base_url}}"], "path": ["api", "reports", "arrears"] } }, "response": [] },
+        { "name": "Income Report", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/reports/income", "host": ["{{base_url}}"], "path": ["api", "reports", "income"] } }, "response": [] },
+        { "name": "Expected Income Report", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/reports/expected-income", "host": ["{{base_url}}"], "path": ["api", "reports", "expected-income"] } }, "response": [] },
+        { "name": "Class Report", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/reports/class", "host": ["{{base_url}}"], "path": ["api", "reports", "class"] } }, "response": [] },
+        { "name": "Payment History Report", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/reports/payment-history", "host": ["{{base_url}}"], "path": ["api", "reports", "payment-history"] } }, "response": [] }
+      ]
+    },
+    // DASHBOARD MODULE
+    {
+      "name": "Dashboard",
+      "item": [
+        { "name": "Admin Stats", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/dashboard/admin", "host": ["{{base_url}}"], "path": ["api", "dashboard", "admin"] } }, "response": [] },
+        { "name": "Student Stats", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/dashboard/student", "host": ["{{base_url}}"], "path": ["api", "dashboard", "student"] } }, "response": [] },
+        { "name": "Monthly Income Chart", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/dashboard/monthly-income", "host": ["{{base_url}}"], "path": ["api", "dashboard", "monthly-income"] } }, "response": [] },
+        { "name": "Payment Method Breakdown", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/dashboard/payment-method-breakdown", "host": ["{{base_url}}"], "path": ["api", "dashboard", "payment-method-breakdown"] } }, "response": [] }
+      ]
+    },
+    // FEE CATEGORY MODULE
+    {
+      "name": "FeeCategory",
+      "item": [
+        { "name": "List Fee Categories", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/fee-categories", "host": ["{{base_url}}"], "path": ["api", "fee-categories"] } }, "response": [] },
+        { "name": "Create Fee Category", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"SPP\",\n  \"description\": \"SPP Bulanan\"\n}" }, "url": { "raw": "{{base_url}}/api/fee-categories", "host": ["{{base_url}}"], "path": ["api", "fee-categories"] } }, "response": [] },
+        { "name": "Update Fee Category", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"SPP Update\"\n}" }, "url": { "raw": "{{base_url}}/api/fee-categories/1", "host": ["{{base_url}}"], "path": ["api", "fee-categories", "1"] } }, "response": [] },
+        { "name": "Delete Fee Category", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/fee-categories/1", "host": ["{{base_url}}"], "path": ["api", "fee-categories", "1"] } }, "response": [] }
+      ]
+    },
+    // ACADEMIC YEAR MODULE
+    {
+      "name": "AcademicYear",
+      "item": [
+        { "name": "List Academic Years", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/academic-years", "host": ["{{base_url}}"], "path": ["api", "academic-years"] } }, "response": [] },
+        { "name": "Create Academic Year", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"2025/2026\",\n  \"is_active\": true\n}" }, "url": { "raw": "{{base_url}}/api/academic-years", "host": ["{{base_url}}"], "path": ["api", "academic-years"] } }, "response": [] },
+        { "name": "Update Academic Year", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"2026/2027\"\n}" }, "url": { "raw": "{{base_url}}/api/academic-years/1", "host": ["{{base_url}}"], "path": ["api", "academic-years", "1"] } }, "response": [] },
+        { "name": "Delete Academic Year", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/academic-years/1", "host": ["{{base_url}}"], "path": ["api", "academic-years", "1"] } }, "response": [] }
+      ]
+    },
+    // CLASS MODULE
+    {
+      "name": "Class",
+      "item": [
+        { "name": "List Classes", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/classes", "host": ["{{base_url}}"], "path": ["api", "classes"] } }, "response": [] },
+        { "name": "Create Class", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Kelas 1\"\n}" }, "url": { "raw": "{{base_url}}/api/classes", "host": ["{{base_url}}"], "path": ["api", "classes"] } }, "response": [] },
+        { "name": "Update Class", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Kelas 1A\"\n}" }, "url": { "raw": "{{base_url}}/api/classes/1", "host": ["{{base_url}}"], "path": ["api", "classes", "1"] } }, "response": [] },
+        { "name": "Delete Class", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/classes/1", "host": ["{{base_url}}"], "path": ["api", "classes", "1"] } }, "response": [] }
+      ]
+    },
+    // NOTIFICATION MODULE
+    {
+      "name": "Notification",
+      "item": [
+        { "name": "List Notifications", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/notifications", "host": ["{{base_url}}"], "path": ["api", "notifications"] } }, "response": [] },
+        { "name": "Mark Notification as Read", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": { "raw": "{{base_url}}/api/notifications/1/read", "host": ["{{base_url}}"], "path": ["api", "notifications", "1", "read"] } }, "response": [] }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" }
+  ]
+}

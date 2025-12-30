@@ -28,10 +28,10 @@ class AcademicYear extends Model
     }
 
     /**
-     * Get all invoices for this academic year.
+     * Get all invoice items for this academic year.
      */
-    public function invoices(): HasMany
+    public function invoiceItems(): HasMany
     {
-        return $this->hasMany(Invoice::class);
+        return $this->hasMany(InvoiceItem::class);
     }
 }

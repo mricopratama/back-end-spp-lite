@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Student;
 use App\Models\FeeCategory;
@@ -27,41 +26,28 @@ class InvoiceController extends Controller
     {
         try {
             $user = Auth::user();
-
-            $query = Invoice::with(['student', 'academicYear', 'items.feeCategory']);
-
-            // If user is student, only return their own invoices
+            $query = InvoiceItem::with(['student', 'academicYear', 'feeCategory']);
             if ($user->role->name === 'student') {
                 if (!$user->student_id) {
                     return ApiResponse::error('Student record not found', 404);
                 }
                 $query->where('student_id', $user->student_id);
             }
-
-            // Filter by status
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
-
-            // Filter by student (admin only)
             if ($request->has('student_id') && $user->role->name === 'admin') {
                 $query->where('student_id', $request->student_id);
             }
-
-            // Filter by academic year
             if ($request->has('academic_year_id')) {
                 $query->where('academic_year_id', $request->academic_year_id);
             }
-
-            // Filter by due date range
             if ($request->has('due_date_from')) {
-                $query->where('due_date', '>=', $request->due_date_from);
+                $query->where('created_at', '>=', $request->due_date_from);
             }
             if ($request->has('due_date_to')) {
-                $query->where('due_date', '<=', $request->due_date_to);
+                $query->where('created_at', '<=', $request->due_date_to);
             }
-
-            // Search by invoice number or student name
             if ($request->has('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
@@ -71,11 +57,8 @@ class InvoiceController extends Controller
                       });
                 });
             }
-
-            // Pagination
             $perPage = $request->get('per_page', 15);
             $invoices = $query->orderBy('created_at', 'desc')->paginate($perPage);
-
             return ApiResponse::success($invoices, 'List of invoices');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch invoices: ' . $e->getMessage(), 500);
@@ -89,67 +72,28 @@ class InvoiceController extends Controller
     {
         try {
             DB::beginTransaction();
-
             $validated = $request->validated();
-
-            // Generate invoice number
             $invoiceNumber = $this->generateInvoiceNumber();
-
-            // Get student data
             $student = Student::findOrFail($validated['student_id']);
-
-            // Calculate total amount
-            $totalAmount = 0;
-            foreach ($validated['items'] as $item) {
-                // Get amount based on priority:
-                // 1. Custom amount (manual override) - highest priority
-                // 2. Use fee_category default_amount
-                if (!isset($item['custom_amount'])) {
-                    $feeCategory = FeeCategory::findOrFail($item['fee_category_id']);
-                    $item['custom_amount'] = $feeCategory->default_amount;
-                }
-                $totalAmount += $item['custom_amount'];
-            }
-
-            // Create invoice
-            $invoice = Invoice::create([
+            $feeCategory = FeeCategory::findOrFail($validated['fee_category_id']);
+            $amount = $validated['amount'] ?? $feeCategory->default_amount;
+            $invoiceItem = InvoiceItem::create([
                 'invoice_number' => $invoiceNumber,
-                'title' => $validated['title'] ?? 'Invoice Tagihan SPP',
                 'student_id' => $validated['student_id'],
                 'academic_year_id' => $validated['academic_year_id'],
-                'invoice_type' => $validated['invoice_type'],
-                'period_month' => $validated['period_month'],
-                'period_year' => $validated['period_year'],
-                'total_amount' => $totalAmount,
+                'fee_category_id' => $validated['fee_category_id'],
+                'amount' => $amount,
                 'paid_amount' => 0,
                 'status' => 'unpaid',
-                'due_date' => $validated['due_date'],
+                'period_month' => $validated['period_month'],
             ]);
-
-            // Create invoice items
-            foreach ($validated['items'] as $item) {
-                if (!isset($item['custom_amount'])) {
-                    $feeCategory = FeeCategory::findOrFail($item['fee_category_id']);
-                    $item['custom_amount'] = $feeCategory->default_amount;
-                }
-
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'fee_category_id' => $item['fee_category_id'],
-                    'description' => $item['description'],
-                    'amount' => $item['custom_amount'],
-                ]);
-            }
-
             DB::commit();
-
             return ApiResponse::success([
-                'id' => $invoice->id,
                 'invoice_number' => $invoiceNumber,
                 'student_name' => $student->full_name,
-                'total_amount' => $totalAmount,
+                'amount' => $amount,
                 'status' => 'unpaid',
-                'items_count' => count($validated['items']),
+                'invoice_item_id' => $invoiceItem->id,
             ], 'Invoice generated successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -164,11 +108,8 @@ class InvoiceController extends Controller
     {
         try {
             DB::beginTransaction();
-
             $validated = $request->validated();
             $studentIds = [];
-
-            // Get student IDs based on class_id or student_ids
             if (isset($validated['class_id'])) {
                 $studentIds = StudentClassHistory::where([
                     'class_id' => $validated['class_id'],
@@ -177,129 +118,79 @@ class InvoiceController extends Controller
             } elseif (isset($validated['student_ids'])) {
                 $studentIds = $validated['student_ids'];
             }
-
             if (empty($studentIds)) {
                 return ApiResponse::error('No students found', 400);
             }
-
             $created = 0;
             $skipped = 0;
-
             foreach ($studentIds as $studentId) {
-                // Check if student already has invoice for this period
-                // (You can customize this check based on your business logic)
-                $existingInvoice = Invoice::where([
+                // Cek jika sudah ada invoice item untuk fee_category, tahun ajaran, dan periode yang sama
+                $exists = InvoiceItem::where([
                     'student_id' => $studentId,
                     'academic_year_id' => $validated['academic_year_id'],
-                ])->whereHas('items', function ($q) use ($validated) {
-                    foreach ($validated['items'] as $item) {
-                        $q->where('fee_category_id', $item['fee_category_id']);
-                    }
-                })->exists();
-
-                if ($existingInvoice) {
+                    'fee_category_id' => $validated['fee_category_id'],
+                    'period_month' => $validated['period_month'],
+                ])->exists();
+                if ($exists) {
                     $skipped++;
                     continue;
                 }
-
-                // Generate invoice number
-                $invoiceNumber = $this->generateInvoiceNumber();
-
-                // Calculate total amount
-                $totalAmount = 0;
-                foreach ($validated['items'] as $item) {
-                    if (!isset($item['custom_amount'])) {
-                        $feeCategory = FeeCategory::findOrFail($item['fee_category_id']);
-                        $item['custom_amount'] = $feeCategory->default_amount;
-                    }
-                    $totalAmount += $item['custom_amount'];
-                }
-
-                // Create invoice
-                $invoice = Invoice::create([
-                    'invoice_number' => $invoiceNumber,
-                    'title' => $validated['title'] ?? 'Invoice Tagihan SPP',
+                $feeCategory = FeeCategory::findOrFail($validated['fee_category_id']);
+                $amount = $validated['amount'] ?? $feeCategory->default_amount;
+                InvoiceItem::create([
+                    'invoice_number' => $this->generateInvoiceNumber(),
                     'student_id' => $studentId,
                     'academic_year_id' => $validated['academic_year_id'],
-                    'total_amount' => $totalAmount,
+                    'fee_category_id' => $validated['fee_category_id'],
+                    'amount' => $amount,
                     'paid_amount' => 0,
                     'status' => 'unpaid',
-                    'due_date' => $validated['due_date'],
+                    'period_month' => $validated['period_month'],
                 ]);
-
-                // Create invoice items
-                foreach ($validated['items'] as $item) {
-                    if (!isset($item['custom_amount'])) {
-                        $feeCategory = FeeCategory::findOrFail($item['fee_category_id']);
-                        $item['custom_amount'] = $feeCategory->default_amount;
-                    }
-
-                    InvoiceItem::create([
-                        'invoice_id' => $invoice->id,
-                        'fee_category_id' => $item['fee_category_id'],
-                        'description' => $item['description'],
-                        'amount' => $item['custom_amount'],
-                    ]);
-                }
-
                 $created++;
             }
-
             DB::commit();
-
             return ApiResponse::success([
                 'processed_count' => $created,
                 'skipped_count' => $skipped,
                 'total_students' => count($studentIds),
-            ], 'Bulk invoice generation completed');
+            ], 'Bulk invoice item generation completed');
         } catch (\Exception $e) {
             DB::rollBack();
-            return ApiResponse::error('Failed to create bulk invoices: ' . $e->getMessage(), 500);
+            return ApiResponse::error('Failed to create bulk invoice items: ' . $e->getMessage(), 500);
         }
     }
 
     /**
      * Display the specified invoice with details
      */
-    public function show(Invoice $invoice)
+    public function show($id)
     {
-        $user = Auth::user();
-
-        // If user is student, only allow access to their own invoices
-        if ($user->role->name === 'student') {
-            if ($invoice->student_id != $user->student_id) {
-                return ApiResponse::error('Forbidden: You can only access your own invoices', 403);
-            }
+        $invoiceItem = InvoiceItem::with(['student', 'academicYear', 'feeCategory', 'payments'])->find($id);
+        if (!$invoiceItem) {
+            return ApiResponse::error('Invoice item not found', 404);
         }
-
-        $invoice->load([
-            'student',
-            'academicYear',
-            'items.feeCategory',
-            'payments'
-        ]);
-
+        $user = Auth::user();
+        if ($user->role->name === 'student' && $invoiceItem->student_id != $user->student_id) {
+            return ApiResponse::error('Forbidden: You can only access your own invoice items', 403);
+        }
+        $student = $invoiceItem->student;
+        $dueDate = $invoiceItem->due_date
+            ? $invoiceItem->due_date->format('Y-m-d')
+            : ($invoiceItem->created_at ? $invoiceItem->created_at->format('Y-m-d') : null);
         return ApiResponse::success([
-            'id' => $invoice->id,
-            'invoice_number' => $invoice->invoice_number,
-            'title' => $invoice->title,
-            'student_name' => $invoice->student->full_name,
-            'student_nis' => $invoice->student->nis,
-            'academic_year' => $invoice->academicYear->name,
-            'status' => $invoice->status,
-            'total_amount' => $invoice->total_amount,
-            'paid_amount' => $invoice->paid_amount,
-            'remaining_amount' => $invoice->total_amount - $invoice->paid_amount,
-            'due_date' => $invoice->due_date->format('Y-m-d'),
-            'items' => $invoice->items->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'fee_category' => $item->feeCategory->name,
-                    'description' => $item->description,
-                    'amount' => $item->amount,
-                ];
-            }),
-            'payments' => $invoice->payments->map(function ($payment) {
+            'id' => $invoiceItem->id,
+            'invoice_number' => $invoiceItem->invoice_number,
+            'student_name' => $student ? $student->full_name : '',
+            'student_nis' => $student ? $student->nis : '',
+            'academic_year' => $invoiceItem->academicYear->name ?? '',
+            'status' => $invoiceItem->status,
+            'amount' => $invoiceItem->amount,
+            'paid_amount' => $invoiceItem->paid_amount,
+            'remaining_amount' => $invoiceItem->amount - $invoiceItem->paid_amount,
+            'due_date' => $dueDate,
+            'fee_category' => $invoiceItem->feeCategory->name ?? '',
+            'payments' => $invoiceItem->payments->map(function ($payment) {
                 return [
                     'id' => $payment->id,
                     'amount' => $payment->amount,
@@ -308,7 +199,7 @@ class InvoiceController extends Controller
                     'notes' => $payment->notes,
                 ];
             }),
-        ], 'Invoice detail fetched');
+        ], 'Invoice item detail fetched');
     }
 
     /**
@@ -318,55 +209,44 @@ class InvoiceController extends Controller
     {
         try {
             $user = Auth::user();
-
             if (!$user->student_id) {
                 return ApiResponse::error('Not authorized as student', 403);
             }
-
-            $query = Invoice::with(['academicYear', 'items.feeCategory'])
+            $query = InvoiceItem::with(['academicYear', 'feeCategory'])
                 ->where('student_id', $user->student_id);
-
-            // Filter by status
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
-
             $invoices = $query->orderBy('due_date', 'desc')->paginate(15);
-
-            return ApiResponse::success($invoices, 'My invoices fetched');
+            return ApiResponse::success($invoices, 'My invoice items fetched');
         } catch (\Exception $e) {
-            return ApiResponse::error('Failed to fetch invoices: ' . $e->getMessage(), 500);
+            return ApiResponse::error('Failed to fetch invoice items: ' . $e->getMessage(), 500);
         }
     }
 
     /**
      * Remove the specified invoice (void)
      */
-    public function destroy(Invoice $invoice)
+    public function destroy(InvoiceItem $invoiceItem)
     {
         try {
             DB::beginTransaction();
-
-            // Check if invoice has payments
-            if ($invoice->paid_amount > 0) {
+            if ($invoiceItem->paid_amount > 0) {
                 return ApiResponse::error(
-                    'Cannot delete invoice with existing payments. Paid amount must be 0.',
+                    'Cannot delete invoice item with existing payments. Paid amount must be 0.',
                     400
                 );
             }
 
-            // Delete invoice items
-            $invoice->items()->delete();
-
-            // Delete invoice
-            $invoice->delete();
+            // Hard delete invoice item
+            $invoiceItem->delete();
 
             DB::commit();
 
-            return ApiResponse::success(null, 'Invoice deleted successfully');
+            return ApiResponse::success(null, 'Invoice item deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return ApiResponse::error('Failed to delete invoice: ' . $e->getMessage(), 500);
+            return ApiResponse::error('Failed to delete invoice item: ' . $e->getMessage(), 500);
         }
     }
 
@@ -526,33 +406,17 @@ class InvoiceController extends Controller
             foreach ($groupedData as $data) {
                 try {
                     $invoiceNumber = $this->generateInvoiceNumber();
-                    $totalAmount = array_sum(array_column($data['items'], 'amount'));
-
-                    // Generate title from items
-                    $itemNames = array_map(function($item) {
-                        return $item['description'];
-                    }, $data['items']);
-                    $title = count($itemNames) > 1
-                        ? implode(', ', array_slice($itemNames, 0, 2)) . (count($itemNames) > 2 ? '...' : '')
-                        : ($itemNames[0] ?? 'Invoice Tagihan');
-
-                    $invoice = Invoice::create([
-                        'invoice_number' => $invoiceNumber,
-                        'title' => $title,
-                        'student_id' => $data['student_id'],
-                        'academic_year_id' => $academicYearId,
-                        'total_amount' => $totalAmount,
-                        'paid_amount' => 0,
-                        'status' => 'UNPAID',
-                        'due_date' => $data['due_date'],
-                    ]);
-
                     foreach ($data['items'] as $item) {
                         InvoiceItem::create([
-                            'invoice_id' => $invoice->id,
+                            'invoice_number' => $invoiceNumber,
+                            'student_id' => $data['student_id'],
+                            'academic_year_id' => $academicYearId,
                             'fee_category_id' => $item['fee_category_id'],
-                            'description' => $item['description'],
                             'amount' => $item['amount'],
+                            'paid_amount' => 0,
+                            'status' => 'unpaid',
+                            'due_date' => $data['due_date'],
+                            'description' => $item['description'],
                         ]);
                     }
 
@@ -746,8 +610,8 @@ class InvoiceController extends Controller
         $month = date('m');
         $prefix = "INV/{$year}/{$month}/";
 
-        // Get last invoice number for this month
-        $lastInvoice = Invoice::where('invoice_number', 'like', $prefix . '%')
+        // Get last invoice number for this month from InvoiceItem
+        $lastInvoice = InvoiceItem::where('invoice_number', 'like', $prefix . '%')
             ->orderBy('invoice_number', 'desc')
             ->first();
 
@@ -803,12 +667,13 @@ class InvoiceController extends Controller
                 $student = Student::find($studentId);
 
                 // Check if invoice already exists for this period
-                $exists = Invoice::where([
+                $exists = InvoiceItem::where([
                     'student_id' => $studentId,
                     'academic_year_id' => $validated['academic_year_id'],
                     'period_month' => $validated['period_month'],
                     'period_year' => $validated['period_year'],
-                    'invoice_type' => 'spp_monthly'
+                    'status' => 'unpaid',
+                    'fee_category_id' => $sppCategory->id
                 ])->exists();
 
                 if ($exists) {
@@ -822,26 +687,18 @@ class InvoiceController extends Controller
                 // Generate invoice
                 $monthName = $this->getIndonesianMonthName($validated['period_month']);
 
-                $invoice = Invoice::create([
+                $invoiceItem = InvoiceItem::create([
                     'invoice_number' => $this->generateInvoiceNumber(),
-                    'title' => "SPP Bulan {$monthName} {$validated['period_year']}",
-                    'period_month' => $validated['period_month'],
-                    'period_year' => $validated['period_year'],
-                    'invoice_type' => 'spp_monthly',
                     'student_id' => $studentId,
                     'academic_year_id' => $validated['academic_year_id'],
-                    'total_amount' => $amount,
+                    'fee_category_id' => $sppCategory->id,
+                    'amount' => $amount,
                     'paid_amount' => 0,
                     'status' => 'unpaid',
+                    'period_month' => $validated['period_month'],
+                    'period_year' => $validated['period_year'],
                     'due_date' => $validated['due_date'],
-                ]);
-
-                // Create invoice item
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'fee_category_id' => $sppCategory->id,
                     'description' => "SPP Bulan {$monthName} {$validated['period_year']}",
-                    'amount' => $amount,
                 ]);
 
                 $created++;
@@ -849,7 +706,7 @@ class InvoiceController extends Controller
                     'student_id' => $studentId,
                     'student_name' => $student->full_name,
                     'student_nis' => $student->nis,
-                    'invoice_number' => $invoice->invoice_number,
+                    'invoice_number' => $invoiceItem->invoice_number,
                     'amount' => $amount,
                     'period' => "{$monthName} {$validated['period_year']}",
                     'due_date' => $validated['due_date'],
@@ -878,6 +735,14 @@ class InvoiceController extends Controller
      */
     public function getMonthlyPaymentStatus(Request $request, $studentId)
     {
+        // Get SPP fee category
+        $sppCategory = FeeCategory::where('name', 'LIKE', '%SPP%')
+            ->orWhere('name', 'LIKE', '%spp%')
+            ->first();
+
+        if (!$sppCategory) {
+            return ApiResponse::error('SPP fee category not found. Please create "SPP Bulanan" fee category first.', 400);
+        }
         try {
             $validated = $request->validate([
                 'academic_year_id' => 'required|exists:academic_years,id',
@@ -887,10 +752,12 @@ class InvoiceController extends Controller
             $academicYear = \App\Models\AcademicYear::findOrFail($validated['academic_year_id']);
 
             // Get all monthly SPP invoices for this student in this academic year
-            $invoices = Invoice::where([
+            $invoices = InvoiceItem::where([
                 'student_id' => $studentId,
                 'academic_year_id' => $validated['academic_year_id'],
-                'invoice_type' => 'spp_monthly'
+                'period_month' => $validated['period_month'] ?? null,
+                'period_year' => $validated['period_year'] ?? null,
+                'fee_category_id' => $sppCategory->id
             ])->get();
 
             // Determine academic year range (Juli - Juni)
@@ -957,12 +824,12 @@ class InvoiceController extends Controller
 
             foreach ($validated['months'] as $monthData) {
                 // Check if already exists
-                $exists = Invoice::where([
+                $exists = InvoiceItem::where([
                     'student_id' => $validated['student_id'],
                     'academic_year_id' => $validated['academic_year_id'],
                     'period_month' => $monthData['month'],
                     'period_year' => $monthData['year'],
-                    'invoice_type' => 'spp_monthly'
+                    'fee_category_id' => $sppCategory->id
                 ])->exists();
 
                 if ($exists) {
@@ -972,30 +839,23 @@ class InvoiceController extends Controller
                 $amount = $sppCategory->default_amount;
                 $monthName = $this->getIndonesianMonthName($monthData['month']);
 
-                $invoice = Invoice::create([
+                $invoiceItem = InvoiceItem::create([
                     'invoice_number' => $this->generateInvoiceNumber(),
-                    'title' => "SPP Bulan {$monthName} {$monthData['year']}",
-                    'period_month' => $monthData['month'],
-                    'period_year' => $monthData['year'],
-                    'invoice_type' => 'spp_monthly',
                     'student_id' => $validated['student_id'],
                     'academic_year_id' => $validated['academic_year_id'],
-                    'total_amount' => $amount,
+                    'fee_category_id' => $sppCategory->id,
+                    'amount' => $amount,
                     'paid_amount' => 0,
                     'status' => 'unpaid',
+                    'period_month' => $monthData['month'],
+                    'period_year' => $monthData['year'],
                     'due_date' => $monthData['due_date'],
-                ]);
-
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'fee_category_id' => $sppCategory->id,
                     'description' => "SPP Bulan {$monthName} {$monthData['year']}",
-                    'amount' => $amount,
                 ]);
 
                 $created++;
                 $details[] = [
-                    'invoice_number' => $invoice->invoice_number,
+                    'invoice_number' => $invoiceItem->invoice_number,
                     'period' => "{$monthName} {$monthData['year']}",
                     'amount' => $amount,
                 ];
@@ -1057,8 +917,8 @@ class InvoiceController extends Controller
     private function buildMonthData($student, $invoices, $month, $year, $academicYearId)
     {
         $invoice = $invoices->where('period_month', $month)
-                            ->where('period_year', $year)
-                            ->first();
+                    ->where('period_year', $year)
+                    ->first();
 
         $monthName = $this->getIndonesianMonthName($month);
 

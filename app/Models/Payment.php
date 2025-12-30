@@ -16,7 +16,7 @@ class Payment extends Model
         'payment_date',
         'payment_method',
         'notes',
-        'invoice_id',
+        'invoice_item_id',
         'processed_by',
     ];
 
@@ -28,9 +28,9 @@ class Payment extends Model
     /**
      * Get the invoice that owns this payment.
      */
-    public function invoice(): BelongsTo
+    public function invoiceItem(): BelongsTo
     {
-        return $this->belongsTo(Invoice::class);
+        return $this->belongsTo(InvoiceItem::class, 'invoice_item_id');
     }
 
     /**

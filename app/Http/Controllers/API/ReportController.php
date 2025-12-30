@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
-use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Classes;
 use App\Models\StudentClassHistory;
@@ -21,10 +21,10 @@ class ReportController extends Controller
     public function arrears(Request $request)
     {
         try {
-            $query = Invoice::with([
+            $query = InvoiceItem::with([
                 'student.currentClass',
                 'student.classHistory.class',
-                'items.feeCategory'
+                'feeCategory'
             ])
                 ->whereIn('status', ['unpaid', 'partial']);
 
@@ -40,48 +40,39 @@ class ReportController extends Controller
                 $query->where('academic_year_id', $request->academic_year_id);
             }
 
-            $invoices = $query->get();
+            $invoiceItems = $query->get();
 
             // Group by student
             $arrearsData = [];
-            foreach ($invoices as $invoice) {
-                $studentId = $invoice->student_id;
-
+            foreach ($invoiceItems as $item) {
+                $studentId = $item->student_id;
                 if (!isset($arrearsData[$studentId])) {
-                    // Get current class
-                    $currentClass = $invoice->student->classHistory()
+                    $currentClass = $item->student->classHistory()
                         ->with('class')
                         ->orderBy('academic_year_id', 'desc')
                         ->first();
-
                     $arrearsData[$studentId] = [
-                        'student_id' => $invoice->student->id,
-                        'student_name' => $invoice->student->full_name,
-                        'student_nis' => $invoice->student->nis,
+                        'student_id' => $item->student->id,
+                        'student_name' => $item->student->full_name,
+                        'student_nis' => $item->student->nis,
                         'class' => $currentClass?->class->name ?? 'N/A',
                         'total_debt' => 0,
                         'invoices_count' => 0,
                         'details' => [],
                     ];
                 }
-
-                $remainingAmount = $invoice->total_amount - $invoice->paid_amount;
+                $remainingAmount = $item->amount - $item->paid_amount;
                 $arrearsData[$studentId]['total_debt'] += $remainingAmount;
                 $arrearsData[$studentId]['invoices_count']++;
-
-                // Build detail string
-                $itemsDescription = $invoice->items->map(function ($item) {
-                    return $item->description;
-                })->join(', ');
-
                 $arrearsData[$studentId]['details'][] = [
-                    'invoice_number' => $invoice->invoice_number,
-                    'description' => $itemsDescription,
-                    'total_amount' => $invoice->total_amount,
-                    'paid_amount' => $invoice->paid_amount,
+                    'invoice_item_id' => $item->id,
+                    'fee_category' => $item->feeCategory->name,
+                    'description' => $item->description,
+                    'amount' => $item->amount,
+                    'paid_amount' => $item->paid_amount,
                     'remaining_amount' => $remainingAmount,
-                    'due_date' => $invoice->due_date,
-                    'status' => $invoice->status,
+                    'due_date' => $item->due_date,
+                    'status' => $item->status,
                 ];
             }
 
@@ -149,10 +140,9 @@ class ReportController extends Controller
                     ];
                 });
 
-            // Breakdown by fee category
+            // Breakdown by fee category (using invoice_items directly)
             $breakdownByCategory = Payment::whereBetween('payment_date', [$startDate, $endDate])
-                ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-                ->join('invoice_items', 'invoices.id', '=', 'invoice_items.invoice_id')
+                ->join('invoice_items', 'payments.invoice_item_id', '=', 'invoice_items.id')
                 ->join('fee_categories', 'invoice_items.fee_category_id', '=', 'fee_categories.id')
                 ->select('fee_categories.name', DB::raw('SUM(payments.amount) as total'))
                 ->groupBy('fee_categories.id', 'fee_categories.name')
@@ -194,17 +184,15 @@ class ReportController extends Controller
             // Filter by academic year
             $academicYearId = $request->get('academic_year_id');
 
-            $query = Invoice::with(['student', 'academicYear', 'items.feeCategory']);
-
+            $query = InvoiceItem::with(['student', 'academicYear', 'feeCategory']);
             if ($academicYearId) {
                 $query->where('academic_year_id', $academicYearId);
             }
-
-            $invoices = $query->get();
+            $invoiceItems = $query->get();
 
             // Calculate totals
-            $totalExpected = $invoices->sum('total_amount');
-            $totalPaid = $invoices->sum('paid_amount');
+            $totalExpected = $invoiceItems->sum('amount');
+            $totalPaid = $invoiceItems->sum('paid_amount');
             $totalOutstanding = $totalExpected - $totalPaid;
 
             // Breakdown by status
@@ -213,44 +201,24 @@ class ReportController extends Controller
                 'PARTIAL' => 0,
                 'UNPAID' => 0,
             ];
-
-            foreach ($invoices as $invoice) {
-                $byStatus[$invoice->status] += $invoice->total_amount;
+            foreach ($invoiceItems as $item) {
+                $byStatus[strtoupper($item->status)] += $item->amount;
             }
 
             // Breakdown by fee category
             $byCategory = [];
-            foreach ($invoices as $invoice) {
-                foreach ($invoice->items as $item) {
-                    $categoryName = $item->feeCategory->name;
-                    if (!isset($byCategory[$categoryName])) {
-                        $byCategory[$categoryName] = [
-                            'expected' => 0,
-                            'paid' => 0,
-                            'outstanding' => 0,
-                        ];
-                    }
-                    $byCategory[$categoryName]['expected'] += $item->amount;
+            foreach ($invoiceItems as $item) {
+                $categoryName = $item->feeCategory->name;
+                if (!isset($byCategory[$categoryName])) {
+                    $byCategory[$categoryName] = [
+                        'expected' => 0,
+                        'paid' => 0,
+                        'outstanding' => 0,
+                    ];
                 }
+                $byCategory[$categoryName]['expected'] += $item->amount;
+                $byCategory[$categoryName]['paid'] += $item->paid_amount;
             }
-
-            // Calculate paid amount per category from payments
-            $payments = Payment::whereIn('invoice_id', $invoices->pluck('id'))
-                ->get();
-
-            foreach ($payments as $payment) {
-                $invoice = $invoices->firstWhere('id', $payment->invoice_id);
-                if ($invoice) {
-                    foreach ($invoice->items as $item) {
-                        $categoryName = $item->feeCategory->name;
-                        // Distribute payment proportionally
-                        $proportion = $item->amount / $invoice->total_amount;
-                        $byCategory[$categoryName]['paid'] += $payment->amount * $proportion;
-                    }
-                }
-            }
-
-            // Calculate outstanding per category
             foreach ($byCategory as $category => &$data) {
                 $data['outstanding'] = $data['expected'] - $data['paid'];
                 $data['expected'] = (float) $data['expected'];
@@ -292,34 +260,25 @@ class ReportController extends Controller
             foreach ($classes as $class) {
                 // Get students in this class
                 $studentIds = StudentClassHistory::where('class_id', $class->id);
-
                 if ($academicYearId) {
                     $studentIds->where('academic_year_id', $academicYearId);
                 }
-
                 $studentIds = $studentIds->pluck('student_id');
-
                 if ($studentIds->isEmpty()) {
                     continue;
                 }
-
-                // Get invoices for these students
-                $invoices = Invoice::whereIn('student_id', $studentIds);
-
+                // Get invoice items for these students
+                $invoiceItems = InvoiceItem::whereIn('student_id', $studentIds);
                 if ($academicYearId) {
-                    $invoices->where('academic_year_id', $academicYearId);
+                    $invoiceItems->where('academic_year_id', $academicYearId);
                 }
-
-                $invoices = $invoices->get();
-
-                $totalExpected = $invoices->sum('total_amount');
-                $totalPaid = $invoices->sum('paid_amount');
+                $invoiceItems = $invoiceItems->get();
+                $totalExpected = $invoiceItems->sum('amount');
+                $totalPaid = $invoiceItems->sum('paid_amount');
                 $totalOutstanding = $totalExpected - $totalPaid;
-
-                $paidCount = $invoices->where('status', 'PAID')->count();
-                $unpaidCount = $invoices->where('status', 'UNPAID')->count();
-                $partialCount = $invoices->where('status', 'PARTIAL')->count();
-
+                $paidCount = $invoiceItems->where('status', 'PAID')->count();
+                $unpaidCount = $invoiceItems->where('status', 'UNPAID')->count();
+                $partialCount = $invoiceItems->where('status', 'PARTIAL')->count();
                 $result[] = [
                     'class_id' => $class->id,
                     'class_name' => $class->name,
@@ -328,11 +287,11 @@ class ReportController extends Controller
                     'total_paid' => (float) $totalPaid,
                     'total_outstanding' => (float) $totalOutstanding,
                     'collection_rate' => $totalExpected > 0 ? round(($totalPaid / $totalExpected) * 100, 2) : 0,
-                    'invoices' => [
+                    'invoice_items' => [
                         'paid' => $paidCount,
                         'partial' => $partialCount,
                         'unpaid' => $unpaidCount,
-                        'total' => $invoices->count(),
+                        'total' => $invoiceItems->count(),
                     ],
                 ];
             }
@@ -355,8 +314,7 @@ class ReportController extends Controller
     public function paymentHistory(Request $request)
     {
         try {
-            $query = Payment::with(['invoice.student', 'invoice.items.feeCategory']);
-
+            $query = Payment::with(['invoiceItem.student', 'invoiceItem.feeCategory']);
             // Filter by date range
             if ($request->has('start_date')) {
                 $query->whereDate('payment_date', '>=', $request->start_date);
@@ -364,21 +322,17 @@ class ReportController extends Controller
             if ($request->has('end_date')) {
                 $query->whereDate('payment_date', '<=', $request->end_date);
             }
-
             // Filter by payment method
             if ($request->has('payment_method')) {
                 $query->where('payment_method', $request->payment_method);
             }
-
             // Filter by student
             if ($request->has('student_id')) {
-                $query->whereHas('invoice', function ($q) use ($request) {
+                $query->whereHas('invoiceItem', function ($q) use ($request) {
                     $q->where('student_id', $request->student_id);
                 });
             }
-
             $payments = $query->orderBy('payment_date', 'desc')->paginate(20);
-
             return ApiResponse::success($payments, 'Payment history fetched');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch payment history: ' . $e->getMessage(), 500);

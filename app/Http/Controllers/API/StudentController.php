@@ -301,7 +301,33 @@ class StudentController extends Controller
 
             // Transform data to include current class info more clearly
 
-            $transformedData = $students->getCollection()->map(function ($student) {
+
+            // Ambil tahun ajaran dari parameter (year), jika tidak ada fallback ke current_class_info
+            $yearParam = $request->year;
+            $transformedData = $students->getCollection()->map(function ($student) use ($yearParam) {
+                // Cari class history sesuai tahun ajaran yang dipilih
+                $history = null;
+                if ($yearParam) {
+                    $yearPattern = str_replace('-', '/', $yearParam);
+                    $history = $student->classHistories()
+                        ->whereHas('academicYear', function ($q) use ($yearPattern) {
+                            $q->where('name', $yearPattern);
+                        })
+                        ->with(['class', 'academicYear'])
+                        ->first();
+                }
+                // Jika tidak ditemukan, fallback ke current_class_info
+                $classInfo = null;
+                if ($history) {
+                    $classInfo = [
+                        'class_id' => $history->class_id,
+                        'class_name' => $history->class->name ?? null,
+                        'academic_year_id' => $history->academic_year_id,
+                        'academic_year_name' => $history->academicYear->name ?? null,
+                    ];
+                } else {
+                    $classInfo = $student->current_class_info;
+                }
                 return [
                     'id' => $student->id,
                     'nis' => $student->nis,
@@ -309,7 +335,7 @@ class StudentController extends Controller
                     'address' => $student->address,
                     'phone_number' => $student->phone_number,
                     'status' => $student->status,
-                    'current_class' => $student->current_class_info,
+                    'class_info' => $classInfo,
                     'created_at' => $student->created_at,
                     'updated_at' => $student->updated_at,
                 ];
