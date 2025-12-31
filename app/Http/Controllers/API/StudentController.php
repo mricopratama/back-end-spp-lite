@@ -129,49 +129,67 @@ class StudentController extends Controller
             'search' => 'required|string|max:255',
             'academic_year_id' => 'nullable|exists:academic_years,id',
             'year' => ['nullable', 'string', 'regex:/^\d{4}(-|\/)\d{4}$|^\d{4}$/'],
+            'level' => 'nullable|string|max:50',
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
         $search = $request->search;
         $academicYearId = $request->academic_year_id;
         $yearParam = $request->year;
+        $level = $request->level;
 
         $query = Student::query();
 
-        // Filter academic year
+        // Gabungkan filter academic_year_id/year dan level dalam satu whereHas agar filter level hanya berlaku pada class history tahun ajaran yang dicari
+        $filterByAcademicYear = null;
         if ($academicYearId) {
-            $query->whereHas('classHistory', function ($q) use ($academicYearId) {
+            $filterByAcademicYear = function ($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId);
-            });
+            };
         } elseif ($yearParam) {
             if (strpos($yearParam, '-') !== false) {
-                // Format: 2024-2025 -> 2024/2025
                 $academicYearPattern = str_replace('-', '/', $yearParam);
-                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
-                    $q->where('name', $academicYearPattern);
-                });
+                $filterByAcademicYear = function ($q) use ($academicYearPattern) {
+                    $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
+                        $qa->where('name', $academicYearPattern);
+                    });
+                };
             } elseif (strpos($yearParam, '/') !== false) {
-                // Format: 2024/2025 (exact match)
                 $academicYearPattern = $yearParam;
-                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
-                    $q->where('name', $academicYearPattern);
-                });
+                $filterByAcademicYear = function ($q) use ($academicYearPattern) {
+                    $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
+                        $qa->where('name', $academicYearPattern);
+                    });
+                };
             } else {
-                // Format: 2024 -> 2024/%
                 $academicYearPattern = $yearParam . '/%';
-                $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
-                    $q->where('name', 'like', $academicYearPattern);
-                });
+                $filterByAcademicYear = function ($q) use ($academicYearPattern) {
+                    $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
+                        $qa->where('name', 'like', $academicYearPattern);
+                    });
+                };
             }
         } else {
-            // Default: tahun ajar aktif
             $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
             if (!$activeYear) {
                 return ApiResponse::error('Tidak ada tahun ajar aktif', 422);
             }
             $academicYearId = $activeYear->id;
-            $query->whereHas('classHistory', function ($q) use ($academicYearId) {
+            $filterByAcademicYear = function ($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId);
+            };
+        }
+
+        if ($level || $filterByAcademicYear) {
+            $query->whereHas('classHistory', function ($q) use ($level, $filterByAcademicYear) {
+                if ($filterByAcademicYear) {
+                    $filterByAcademicYear($q);
+                }
+                if ($level) {
+                    $q->whereHas('class', function ($qc) use ($level) {
+                        $qc->where('level', $level);
+                    });
+                }
             });
         }
 
@@ -213,6 +231,7 @@ class StudentController extends Controller
                 // year: 2024, 2024-2025, atau 2024/2025
                 'year' => ['nullable', 'string', 'regex:/^\d{4}(-|\/)\d{4}$|^\d{4}$/'],
                 'class_id' => 'nullable|exists:classes,id',
+                'level' => 'nullable|string|max:50',
                 'status' => 'nullable|in:active,inactive,graduated,dropped',
                 'search' => 'nullable|string|max:255',
                 'sort_by' => 'nullable|in:full_name,nis,status,created_at',
@@ -232,43 +251,54 @@ class StudentController extends Controller
             // Load relationships
             $query->with(['currentClassHistory.class', 'currentClassHistory.academicYear']);
 
-            // Filter by academic year (supports both ID and year)
+            // Gabungkan filter academic_year_id/year, class_id, dan level dalam satu whereHas agar filter level hanya berlaku pada class history tahun ajaran yang dicari
+            $filterByAcademicYear = null;
             if ($request->has('academic_year_id')) {
-                // Filter by exact academic year ID
-                $query->whereHas('classHistory', function ($q) use ($request) {
-                    $q->where('academic_year_id', $request->academic_year_id);
-                });
-            } elseif ($request->has('year')) {
-                // Filter by year (supports multiple formats)
+                $academicYearId = $request->academic_year_id;
+                $filterByAcademicYear = function ($q) use ($academicYearId) {
+                    $q->where('academic_year_id', $academicYearId);
+                };
+            } else if ($request->has('year')) {
                 $yearParam = $request->year;
-
-                // Ubah format 2024-2025 atau 2024/2025 menjadi 2024/2025 (exact match),
-                // dan 2024 menjadi 2024/%
                 if (strpos($yearParam, '-') !== false) {
-                    // Format: 2024-2025 -> 2024/2025
                     $academicYearPattern = str_replace('-', '/', $yearParam);
-                    $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
-                        $q->where('name', $academicYearPattern);
-                    });
-                } elseif (strpos($yearParam, '/') !== false) {
-                    // Format: 2024/2025 (exact match)
+                    $filterByAcademicYear = function ($q) use ($academicYearPattern) {
+                        $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
+                            $qa->where('name', $academicYearPattern);
+                        });
+                    };
+                } else if (strpos($yearParam, '/') !== false) {
                     $academicYearPattern = $yearParam;
-                    $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
-                        $q->where('name', $academicYearPattern);
-                    });
+                    $filterByAcademicYear = function ($q) use ($academicYearPattern) {
+                        $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
+                            $qa->where('name', $academicYearPattern);
+                        });
+                    };
                 } else {
-                    // Format: 2024 -> 2024/%
                     $academicYearPattern = $yearParam . '/%';
-                    $query->whereHas('classHistory.academicYear', function ($q) use ($academicYearPattern) {
-                        $q->where('name', 'like', $academicYearPattern);
-                    });
+                    $filterByAcademicYear = function ($q) use ($academicYearPattern) {
+                        $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
+                            $qa->where('name', 'like', $academicYearPattern);
+                        });
+                    };
                 }
             }
 
-            // Filter by class
-            if ($request->has('class_id')) {
-                $query->whereHas('classHistory', function ($q) use ($request) {
-                    $q->where('class_id', $request->class_id);
+            if ($request->has('class_id') || $request->has('level') || $filterByAcademicYear) {
+                $classId = $request->class_id;
+                $level = $request->level;
+                $query->whereHas('classHistory', function ($q) use ($classId, $level, $filterByAcademicYear) {
+                    if ($filterByAcademicYear) {
+                        $filterByAcademicYear($q);
+                    }
+                    if ($classId) {
+                        $q->where('class_id', $classId);
+                    }
+                    if ($level) {
+                        $q->whereHas('class', function ($qc) use ($level) {
+                            $qc->where('level', $level);
+                        });
+                    }
                 });
             }
 
@@ -332,9 +362,9 @@ class StudentController extends Controller
                     'id' => $student->id,
                     'nis' => $student->nis,
                     'full_name' => $student->full_name,
-                    'address' => $student->address,
-                    'phone_number' => $student->phone_number,
-                    'status' => $student->status,
+                    // 'address' => $student->address, // intentionally omitted
+                    // 'phone_number' => $student->phone_number, // intentionally omitted
+                    // 'status' => $student->status,
                     'class_info' => $classInfo,
                     'created_at' => $student->created_at,
                     'updated_at' => $student->updated_at,

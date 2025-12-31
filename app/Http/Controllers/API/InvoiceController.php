@@ -227,27 +227,21 @@ class InvoiceController extends Controller
     /**
      * Remove the specified invoice (void)
      */
-    public function destroy(InvoiceItem $invoiceItem)
+    public function destroy($id)
     {
-        try {
-            DB::beginTransaction();
-            if ($invoiceItem->paid_amount > 0) {
-                return ApiResponse::error(
-                    'Cannot delete invoice item with existing payments. Paid amount must be 0.',
-                    400
-                );
-            }
+        $deleted = InvoiceItem::where('id', $id)->delete();
 
-            // Hard delete invoice item
-            $invoiceItem->delete();
-
-            DB::commit();
-
-            return ApiResponse::success(null, 'Invoice item deleted successfully');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return ApiResponse::error('Failed to delete invoice item: ' . $e->getMessage(), 500);
+        if ($deleted === 0) {
+            return ApiResponse::error(
+                'Invoice item not found or cannot be deleted',
+                404
+            );
         }
+
+        return ApiResponse::success(
+            null,
+            'Invoice item deleted successfully'
+        );
     }
 
     /**
