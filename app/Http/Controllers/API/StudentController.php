@@ -319,9 +319,33 @@ class StudentController extends Controller
             }
 
             // Sorting
-            $sortBy = $request->get('sort_by', 'full_name');
+            $sortBy = $request->get('sort_by');
             $sortOrder = $request->get('sort_order', 'asc');
-            $query->orderBy($sortBy, $sortOrder);
+            if ($sortBy) {
+                $query->orderBy($sortBy, $sortOrder);
+            } else {
+                // Default: urutkan berdasarkan kelas (level ASC, class_id ASC) pada tahun ajaran yang difilter, lalu nis ASC
+                $query->with(['classHistory.class']);
+                $query->getQuery()->orders = [];
+                $academicYearFilter = '';
+                if ($request->has('academic_year_id')) {
+                    $academicYearFilter = ' AND sch.academic_year_id = ' . intval($request->academic_year_id);
+                }
+                $query->orderByRaw('(
+                    SELECT c.level FROM student_class_history sch
+                    JOIN classes c ON sch.class_id = c.id
+                    WHERE sch.student_id = students.id'
+                    . $academicYearFilter .
+                    ' ORDER BY sch.id DESC LIMIT 1
+                ) ASC');
+                $query->orderByRaw('(
+                    SELECT sch.class_id FROM student_class_history sch
+                    WHERE sch.student_id = students.id'
+                    . $academicYearFilter .
+                    ' ORDER BY sch.id DESC LIMIT 1
+                ) ASC');
+                $query->orderBy('nis', 'asc');
+            }
 
             // Pagination
             $perPage = $request->get('per_page', 15);
