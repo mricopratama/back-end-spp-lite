@@ -483,6 +483,17 @@ class StudentController extends Controller
             DB::beginTransaction();
 
             $student = Student::findOrFail($id);
+
+            // Validasi: hanya siswa dengan status 'active' di tahun ajaran aktif yang bisa diedit
+            $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+            if ($activeYear) {
+                $classHistory = $student->classHistories()->where('academic_year_id', $activeYear->id)->first();
+                if ($student->status !== 'active') {
+                    DB::rollBack();
+                    return ApiResponse::error('Hanya siswa dengan status ACTIVE di tahun ajaran aktif yang bisa diedit.', 403);
+                }
+            }
+
             $student->update($request->validated());
 
             DB::commit();
