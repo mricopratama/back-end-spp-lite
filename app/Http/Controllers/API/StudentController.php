@@ -11,6 +11,7 @@ use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Http\Requests\SetStudentClassRequest;
 use App\Http\Requests\BulkPromoteRequest;
+use App\Http\Requests\BulkPromoteAutoRequest;
 use App\Http\Requests\ImportStudentsRequest;
 use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
@@ -518,10 +519,10 @@ class StudentController extends Controller
 
             $student = Student::findOrFail($id);
 
-            // Check if student has invoices
-            if ($student->invoices()->exists()) {
+            // Check if student has invoice items
+            if ($student->invoice_items()->exists()) {
                 return ApiResponse::error(
-                    'Cannot delete student with existing invoices. Set status to INACTIVE instead.',
+                    'Cannot delete student with existing invoice items. Set status to INACTIVE instead.',
                     400
                 );
             }
@@ -582,6 +583,254 @@ class StudentController extends Controller
             DB::rollBack();
             return ApiResponse::error('Failed to assign class: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Preview bulk promotion with automatic 1:1 class mapping
+     * GET /api/students/bulk-promote/preview?from_academic_year_id=7&to_academic_year_id=8
+     */
+    public function bulkPromotePreview(Request $request)
+    {
+        try {
+            $request->validate([
+                'from_academic_year_id' => 'required|exists:academic_years,id',
+                'to_academic_year_id' => 'required|exists:academic_years,id|different:from_academic_year_id',
+            ]);
+
+            $fromYearId = $request->from_academic_year_id;
+            $toYearId = $request->to_academic_year_id;
+
+            // Get all ACTIVE students in the source academic year
+            $studentHistories = StudentClassHistory::with(['student', 'class'])
+                ->where('academic_year_id', $fromYearId)
+                ->whereHas('student', function($q) {
+                    $q->where('status', 'active');
+                })
+                ->get()
+                ->groupBy('class_id');
+
+            $classMapping = [];
+            $totalPromote = 0;
+            $totalGraduate = 0;
+            $warnings = [];
+
+            foreach ($studentHistories as $classId => $histories) {
+                $sourceClass = $histories->first()->class;
+                $studentCount = $histories->count();
+
+                // Check if students already promoted
+                $alreadyPromoted = StudentClassHistory::whereIn('student_id', $histories->pluck('student_id'))
+                    ->where('academic_year_id', $toYearId)
+                    ->count();
+
+                if ($alreadyPromoted > 0) {
+                    $warnings[] = "{$alreadyPromoted} siswa dari {$sourceClass->name} sudah dipromosikan ke tahun ajaran tujuan";
+                }
+
+                // Determine action based on level
+                if ($sourceClass->level >= 6) {
+                    // GRADUATE
+                    $classMapping[] = [
+                        'from_class_id' => $sourceClass->id,
+                        'from_class_name' => $sourceClass->name,
+                        'from_class_level' => $sourceClass->level,
+                        'to_class_id' => null,
+                        'to_class_name' => null,
+                        'to_class_level' => null,
+                        'student_count' => $studentCount,
+                        'action' => 'graduate'
+                    ];
+                    $totalGraduate += $studentCount;
+                } else {
+                    // PROMOTE - Find target class with auto 1:1 mapping
+                    $targetClass = $this->findTargetClass($sourceClass);
+
+                    if (!$targetClass) {
+                        $warnings[] = "Kelas tujuan untuk '{$sourceClass->name}' tidak ditemukan (level " . ($sourceClass->level + 1) . ")";
+                    }
+
+                    $classMapping[] = [
+                        'from_class_id' => $sourceClass->id,
+                        'from_class_name' => $sourceClass->name,
+                        'from_class_level' => $sourceClass->level,
+                        'to_class_id' => $targetClass?->id,
+                        'to_class_name' => $targetClass?->name,
+                        'to_class_level' => $targetClass?->level,
+                        'student_count' => $studentCount,
+                        'action' => 'promote'
+                    ];
+                    $totalPromote += $studentCount;
+                }
+            }
+
+            // Count inactive students
+            $inactiveCount = Student::where('status', '!=', 'active')
+                ->whereHas('classHistory', function($q) use ($fromYearId) {
+                    $q->where('academic_year_id', $fromYearId);
+                })
+                ->count();
+
+            return ApiResponse::success([
+                'summary' => [
+                    'total_active_students' => $totalPromote + $totalGraduate,
+                    'will_promote' => $totalPromote,
+                    'will_graduate' => $totalGraduate,
+                    'will_skip_inactive' => $inactiveCount,
+                ],
+                'class_mapping' => $classMapping,
+                'warnings' => $warnings,
+            ], 'Preview bulk promotion generated successfully');
+
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to generate preview: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Execute bulk promotion with automatic 1:1 class mapping
+     * POST /api/students/bulk-promote/auto
+     */
+    public function bulkPromoteAuto(BulkPromoteAutoRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $fromYearId = $request->from_academic_year_id;
+            $toYearId = $request->to_academic_year_id;
+
+            $promoted = 0;
+            $graduated = 0;
+            $skipped = 0;
+            $failed = 0;
+
+            $details = [
+                'promoted' => [],
+                'graduated' => [],
+                'skipped' => [],
+                'failed' => []
+            ];
+
+            // Get all ACTIVE students in the source academic year
+            $studentHistories = StudentClassHistory::with(['student', 'class'])
+                ->where('academic_year_id', $fromYearId)
+                ->whereHas('student', function($q) {
+                    $q->where('status', 'active');
+                })
+                ->get();
+
+            foreach ($studentHistories as $history) {
+                $student = $history->student;
+                $sourceClass = $history->class;
+
+                // Skip if already promoted
+                $exists = StudentClassHistory::where([
+                    'student_id' => $student->id,
+                    'academic_year_id' => $toYearId,
+                ])->exists();
+
+                if ($exists) {
+                    $skipped++;
+                    $details['skipped'][] = [
+                        'student_id' => $student->id,
+                        'student_name' => $student->full_name,
+                        'student_nis' => $student->nis,
+                        'reason' => 'Already promoted to target academic year'
+                    ];
+                    continue;
+                }
+
+                // Determine action based on level
+                if ($sourceClass->level >= 6) {
+                    // GRADUATE
+                    $student->update(['status' => 'graduated']);
+                    $graduated++;
+                    $details['graduated'][] = [
+                        'student_id' => $student->id,
+                        'student_name' => $student->full_name,
+                        'student_nis' => $student->nis,
+                        'from_class' => $sourceClass->name,
+                        'status' => 'graduated'
+                    ];
+                } else {
+                    // PROMOTE - Find target class
+                    $targetClass = $this->findTargetClass($sourceClass);
+
+                    if (!$targetClass) {
+                        $failed++;
+                        $details['failed'][] = [
+                            'student_id' => $student->id,
+                            'student_name' => $student->full_name,
+                            'student_nis' => $student->nis,
+                            'from_class' => $sourceClass->name,
+                            'reason' => "Target class not found for level " . ($sourceClass->level + 1)
+                        ];
+                        continue;
+                    }
+
+                    // Create new class history
+                    StudentClassHistory::create([
+                        'student_id' => $student->id,
+                        'class_id' => $targetClass->id,
+                        'academic_year_id' => $toYearId,
+                    ]);
+
+                    $promoted++;
+                    $details['promoted'][] = [
+                        'student_id' => $student->id,
+                        'student_name' => $student->full_name,
+                        'student_nis' => $student->nis,
+                        'from_class' => $sourceClass->name,
+                        'to_class' => $targetClass->name
+                    ];
+                }
+            }
+
+            DB::commit();
+
+            return ApiResponse::success([
+                'success' => true,
+                'promoted_count' => $promoted,
+                'graduated_count' => $graduated,
+                'skipped_count' => $skipped,
+                'failed_count' => $failed,
+                'details' => $details,
+            ], 'Bulk promotion completed successfully');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::error('Failed to execute bulk promotion: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Find target class for promotion using 1:1 mapping logic
+     * Rule: level + 1, same class suffix
+     * Example: "Kelas 1.1" -> "Kelas 2.1", "Kelas 3.2" -> "Kelas 4.2"
+     */
+    private function findTargetClass($sourceClass)
+    {
+        $targetLevel = $sourceClass->level + 1;
+
+        // Extract class suffix using regex
+        // Pattern: "Kelas {level}.{suffix}" -> extract suffix
+        preg_match('/\.(\d+)$/', $sourceClass->name, $matches);
+        $classSuffix = $matches[1] ?? null;
+
+        // Try to find class with same suffix
+        if ($classSuffix) {
+            $targetClass = Classes::where('level', $targetLevel)
+                ->where('name', 'like', "%.{$classSuffix}")
+                ->first();
+
+            if ($targetClass) {
+                return $targetClass;
+            }
+        }
+
+        // Fallback: Get first class at target level
+        return Classes::where('level', $targetLevel)
+            ->orderBy('name')
+            ->first();
     }
 
     /**
@@ -1071,14 +1320,15 @@ class StudentController extends Controller
 
             $academicYear = \App\Models\AcademicYear::findOrFail($academicYearId);
 
-            // Get all invoices for this student in this academic year
-            $invoices = \App\Models\Invoice::with(['items.feeCategory', 'payments'])
+            // Get all invoice items for this student in this academic year
+            $invoiceItems = \App\Models\InvoiceItem::with(['feeCategory', 'payments'])
                 ->where('student_id', $student->id)
                 ->where('academic_year_id', $academicYearId)
+                ->orderBy('period_month', 'asc')
                 ->get();
 
             // Prepare monthly status (assuming SPP is monthly)
-            // We'll extract month from due_date
+            // We'll extract month from period_month
             $monthlyStatus = [];
             $monthsMap = [
                 1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -1086,13 +1336,15 @@ class StudentController extends Controller
                 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
             ];
 
-            // Group invoices by month (based on due_date)
-            foreach ($invoices as $invoice) {
-                $month = (int) date('n', strtotime($invoice->due_date));
-                $year = (int) date('Y', strtotime($invoice->due_date));
+            // Group invoice items by month (based on period_month)
+            foreach ($invoiceItems as $item) {
+                $month = $item->period_month;
+                // Get year from academic year name (e.g., "2024/2025" -> 2024)
+                $yearParts = explode('/', $academicYear->name);
+                $year = (int) $yearParts[0];
 
                 // Determine status and color
-                $status = $invoice->status;
+                $status = $item->status;
                 $statusColor = 'red'; // default unpaid
 
                 if ($status === 'paid') {
@@ -1103,37 +1355,30 @@ class StudentController extends Controller
 
                 // Get payment date (if paid)
                 $paymentDate = null;
-                if ($invoice->payments->count() > 0) {
-                    $lastPayment = $invoice->payments->sortByDesc('payment_date')->first();
+                if ($item->payments->count() > 0) {
+                    $lastPayment = $item->payments->sortByDesc('payment_date')->first();
                     $paymentDate = $lastPayment->payment_date;
                 }
 
                 // Calculate progress percentage
-                $progressPercentage = $invoice->total_amount > 0
-                    ? round(($invoice->paid_amount / $invoice->total_amount) * 100, 2)
+                $progressPercentage = $item->amount > 0
+                    ? round(($item->paid_amount / $item->amount) * 100, 2)
                     : 0;
 
                 $monthlyStatus[] = [
                     'month' => $month,
                     'month_name' => $monthsMap[$month],
                     'year' => $year,
-                    'invoice_id' => $invoice->id,
-                    'invoice_number' => $invoice->invoice_number,
-                    'amount' => (float) $invoice->total_amount,
-                    'paid_amount' => (float) $invoice->paid_amount,
-                    'remaining_amount' => (float) ($invoice->total_amount - $invoice->paid_amount),
+                    'invoice_item_id' => $item->id,
+                    'invoice_number' => $item->invoice_number,
+                    'amount' => (float) $item->amount,
+                    'paid_amount' => (float) $item->paid_amount,
+                    'remaining_amount' => (float) ($item->amount - $item->paid_amount),
                     'status' => $status,
                     'status_color' => $statusColor,
                     'progress_percentage' => $progressPercentage,
-                    'due_date' => $invoice->due_date,
                     'payment_date' => $paymentDate,
-                    'items' => $invoice->items->map(function ($item) {
-                        return [
-                            'category' => $item->feeCategory->name,
-                            'description' => $item->description,
-                            'amount' => (float) $item->amount,
-                        ];
-                    }),
+                    'fee_category' => $item->feeCategory->name,
                 ];
             }
 

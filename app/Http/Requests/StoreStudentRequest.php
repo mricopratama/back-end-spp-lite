@@ -26,7 +26,7 @@ class StoreStudentRequest extends FormRequest
             'full_name' => 'required|string|max:255',
             'address' => 'nullable|string',
             'phone_number' => 'nullable|string|max:20',
-            'status' => 'required|in:ACTIVE,INACTIVE,GRADUATED',
+            'status' => 'required|in:active,inactive,graduated',
         ];
     }
 
@@ -40,7 +40,7 @@ class StoreStudentRequest extends FormRequest
             'nis.unique' => 'NIS sudah terdaftar',
             'full_name.required' => 'Nama lengkap wajib diisi',
             'status.required' => 'Status wajib diisi',
-            'status.in' => 'Status harus ACTIVE, INACTIVE, atau GRADUATED',
+            'status.in' => 'Status harus active, inactive, atau graduated',
         ];
     }
 }

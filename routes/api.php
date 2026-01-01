@@ -49,6 +49,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Student specific actions (Admin only)
         Route::post('/set-class', [StudentController::class, 'setClass'])->middleware('role:admin');
+        Route::get('/bulk-promote/preview', [StudentController::class, 'bulkPromotePreview'])->middleware('role:admin');
+        Route::post('/bulk-promote/auto', [StudentController::class, 'bulkPromoteAuto'])->middleware('role:admin');
         Route::post('/bulk-promote', [StudentController::class, 'bulkPromote'])->middleware('role:admin');
         Route::post('/{student}/create-user', [StudentController::class, 'createUserAccount'])->middleware('role:admin');
         Route::post('/import', [StudentController::class, 'import'])->middleware('role:admin');

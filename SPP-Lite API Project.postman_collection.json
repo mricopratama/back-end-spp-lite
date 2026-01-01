@@ -1,0 +1,3074 @@
+{
+	"info": {
+		"_postman_id": "97f31a26-2bd6-4d10-8c74-c5972eeb022f",
+		"name": "SPP-Lite API Project",
+		"description": "Dokumentasi API lengkap untuk aplikasi SPP-Lite.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44566299",
+		"_collection_link": "https://ricopratama-5538265.postman.co/workspace/Rico-Pratama's-Workspace~204feb71-3ff3-4163-8760-3d8c26d324cc/collection/44566299-97f31a26-2bd6-4d10-8c74-c5972eeb022f?action=share&source=collection_link&creator=44566299"
+	},
+	"item": [
+		{
+			"name": "01. Modul Auth",
+			"item": [
+				{
+					"name": "Login (Get Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse JSON Response",
+									"var jsonData = pm.response.json();",
+									"",
+									"// Cek jika login sukses (HTTP 200)",
+									"if (pm.response.code === 200) {",
+									"    // Simpan token ke environment variable 'admin_token'",
+									"    pm.environment.set(\"admin_token\", jsonData.data.token);",
+									"    console.log(\"✅ Token Admin berhasil disimpan!\");",
+									"}",
+									"",
+									"// Validasi standar",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{admin_username}}\",\n    \"password\": \"{{admin_password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login user (Admin/Siswa). Jika sukses, token otomatis disimpan ke environment."
+					},
+					"response": [
+						{
+							"name": "Success Login (Admin)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"password\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Login successful\"\n    },\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"user\": {\n            \"id\": 1,\n            \"username\": \"admin\",\n            \"full_name\": \"Administrator Sekolah\",\n            \"role\": \"admin\",\n            \"student_id\": null\n        }\n    }\n}"
+						},
+						{
+							"name": "Failed (Invalid Credentials)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"wrongpass\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/login",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 401,\n        \"status\": \"error\",\n        \"message\": \"Invalid username or password\"\n    },\n    \"data\": null\n}"
+						}
+					]
+				},
+				{
+					"name": "Get My Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Mengambil data user login. Membutuhkan Bearer Token."
+					},
+					"response": [
+						{
+							"name": "Success Profile (Student)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/auth/me",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"me"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"User profile fetched\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"username\": \"1001\",\n        \"full_name\": \"Budi Santoso\",\n        \"role\": \"student\",\n        \"student_id\": 105,\n        \"student_detail\": {\n            \"nis\": \"1001\",\n            \"class_name\": \"X-IPA-1\",\n            \"status\": \"ACTIVE\"\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"old_password\": \"password\",\n    \"new_password\": \"newpass123\",\n    \"new_password_confirmation\": \"newpass123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/change-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Ganti password user sendiri."
+					},
+					"response": [
+						{
+							"name": "Success Change Password",
+							"originalRequest": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{admin_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"old_password\": \"password\",\n    \"new_password\": \"newpass123\",\n    \"new_password_confirmation\": \"newpass123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/change-password",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"change-password"
+									]
+								},
+								"description": "Ganti password user sendiri."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Password changed successfully\"\n    },\n    \"data\": null\n}"
+						}
+					]
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {\r",
+									"    pm.environment.unset(\"access_token\");\r",
+									"    console.log(\"Token cleared from environment\");\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Success Logout",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/logout",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"auth",
+										"logout"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								}
+							],
+							"cookie": [],
+							"body": "{\r\n    \"meta\": {\r\n        \"code\": 200,\r\n        \"status\": \"success\",\r\n        \"message\": \"Success\"\r\n    },\r\n    \"data\": {\r\n        \"message\": \"Logged out successfully\"\r\n    }\r\n}"
+						}
+					]
+				}
+			],
+			"description": "Folder Modul Autentikasi"
+		},
+		{
+			"name": "02. Modul Master Data",
+			"item": [
+				{
+					"name": "A. Academic Years",
+					"item": [
+						{
+							"name": "1. List Academic Years",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/academic-years",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/academic-years",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of academic years\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"2023/2024\",\n            \"is_active\": false\n        },\n        {\n            \"id\": 2,\n            \"name\": \"2024/2025\",\n            \"is_active\": true\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Academic Year",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    if(jsonData.data.is_active === true) {",
+											"        pm.environment.set(\"active_academic_year_id\", jsonData.data.id);",
+											"        console.log(\"✅ Active Year ID Saved: \" + jsonData.data.id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"2026/2027\",\n    \"is_active\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/academic-years",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create (Active)",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"2024/2025\",\n    \"is_active\": true\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/academic-years",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Academic year created\"\n    },\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"2024/2025\",\n        \"is_active\": true,\n        \"created_at\": \"2024-06-01T10:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Update Academic Year",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"2024/2025 Revised\",\n    \"is_active\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years",
+										"{{active_academic_year_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Update",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"2024/2025 Revised\",\n    \"is_active\": true\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years",
+												"{{active_academic_year_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Academic year updated\"\n    },\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"2024/2025 Revised\",\n        \"is_active\": true\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Delete Academic Year",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"academic-years",
+										"{{active_academic_year_id}}"
+									]
+								},
+								"description": "Menghapus tahun ajaran. Backend harus menolak jika data ini sudah dipakai di history siswa."
+							},
+							"response": [
+								{
+									"name": "Success Delete",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years",
+												"{{active_academic_year_id}}"
+											]
+										},
+										"description": "Menghapus tahun ajaran. Backend harus menolak jika data ini sudah dipakai di history siswa."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Academic year deleted\"\n    },\n    \"data\": null\n}"
+								},
+								{
+									"name": "Failed (Foreign Key Constraint)",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/academic-years/{{active_academic_year_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years",
+												"{{active_academic_year_id}}"
+											]
+										},
+										"description": "Menghapus tahun ajaran. Backend harus menolak jika data ini sudah dipakai di history siswa."
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 400,\n        \"status\": \"error\",\n        \"message\": \"Cannot delete active academic year or data is in use.\"\n    },\n    \"data\": null\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "B. Classes",
+					"item": [
+						{
+							"name": "1. List Classes",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/classes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/classes",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of classes\"\n    },\n    \"data\": [\n        {\n            \"id\": 10,\n            \"name\": \"X-IPA-1\",\n            \"level\": 10\n        },\n        {\n            \"id\": 11,\n            \"name\": \"XI-IPS-2\",\n            \"level\": 11\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Class",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    pm.environment.set(\"saved_class_id\", jsonData.data.id);",
+											"    console.log(\"✅ Class ID Saved: \" + jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"X-IPA-1\",\n    \"level\": 10\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/classes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"X-IPA-1\",\n    \"level\": 10\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/classes",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Class created\"\n    },\n    \"data\": {\n        \"id\": 10,\n        \"name\": \"X-IPA-1\",\n        \"level\": 10,\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Update Class",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Kelas 1.2\",\n    \"level\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/classes/{{saved_class_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes",
+										"{{saved_class_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Update",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"X-IPA-Unggulan\",\n    \"level\": 10\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/classes/{{saved_class_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes",
+												"{{saved_class_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Class updated\"\n    },\n    \"data\": {\n        \"id\": 10,\n        \"name\": \"X-IPA-Unggulan\",\n        \"level\": 10\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Delete Class",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/classes/{{saved_class_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"classes",
+										"{{saved_class_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Delete",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/classes/{{saved_class_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes",
+												"{{saved_class_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Class deleted\"\n    },\n    \"data\": null\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "C. Fee Categories",
+					"item": [
+						{
+							"name": "1. List Fee Categories",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/fee-categories",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/fee-categories",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of fee categories\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"SPP Bulanan\",\n            \"default_amount\": 500000\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Uang Gedung\",\n            \"default_amount\": 2000000\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Fee Category",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    pm.environment.set(\"saved_fee_category_id\", jsonData.data.id);",
+											"    console.log(\"✅ Fee Category ID Saved: \" + jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"default_amount\": 180000\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/fee-categories",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"default_amount\": 500000\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/fee-categories",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Fee category created\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan\",\n        \"default_amount\": 500000,\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Update Fee Category",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"default_amount\": 600000\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories",
+										"{{saved_fee_category_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Update",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"default_amount\": 600000\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories",
+												"{{saved_fee_category_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Fee category updated\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan (Naik)\",\n        \"default_amount\": 600000\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Delete Fee Category",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"fee-categories",
+										"{{saved_fee_category_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Delete",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/fee-categories/{{saved_fee_category_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories",
+												"{{saved_fee_category_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Fee category deleted\"\n    },\n    \"data\": null\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "03. Modul Siswa",
+			"item": [
+				{
+					"name": "A. Student Data",
+					"item": [
+						{
+							"name": "1. List Students",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/students?status=ACTIVE",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "ACTIVE"
+										},
+										{
+											"key": "class_id",
+											"value": "{{saved_class_id}}",
+											"description": "Optional: Filter by class",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success List",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/students?status=ACTIVE",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "ACTIVE",
+													"description": "Filter by status"
+												},
+												{
+													"key": "class_id",
+													"value": "{{saved_class_id}}",
+													"description": "Optional: Filter by class",
+													"disabled": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of students\"\n    },\n    \"data\": [\n        {\n            \"id\": 101,\n            \"nis\": \"2024001\",\n            \"full_name\": \"Ahmad Dahlan\",\n            \"status\": \"ACTIVE\",\n            \"current_class\": \"X-IPA-1\"\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Create Student (Single)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    // Simpan ID siswa baru ke environment",
+											"    pm.environment.set(\"saved_student_id\", jsonData.data.id);",
+											"    console.log(\"✅ Student ID Saved: \" + jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nis\": \"2024004\",\n    \"full_name\": \"Dino\",\n    \"address\": \"Jl. Sudirman No. 10\",\n    \"phone_number\": \"08123456789\",\n    \"status\": \"active\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/students",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Create",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"nis\": \"2024001\",\n    \"full_name\": \"Budi Santoso\",\n    \"address\": \"Jl. Sudirman No. 10\",\n    \"phone_number\": \"08123456789\",\n    \"status\": \"ACTIVE\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/students",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Student created\"\n    },\n    \"data\": {\n        \"id\": 105,\n        \"nis\": \"2024001\",\n        \"full_name\": \"Budi Santoso\",\n        \"address\": \"Jl. Sudirman No. 10\",\n        \"status\": \"ACTIVE\",\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "3. Show Student Detail",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/students/{{saved_student_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"{{saved_student_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Detail + History",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/students/{{saved_student_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"{{saved_student_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Student detail fetched\"\n    },\n    \"data\": {\n        \"id\": 105,\n        \"nis\": \"2024001\",\n        \"full_name\": \"Budi Santoso\",\n        \"status\": \"ACTIVE\",\n        \"class_history\": [\n            {\n                \"academic_year\": \"2024/2025\",\n                \"class_name\": \"X-IPA-1\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "4. Import Students (Excel)",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"description": "Upload file .xlsx / .csv di sini",
+											"type": "file",
+											"src": "/C:/Users/LENOVO/Documents/testimport.xlsx"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/students/import",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"import"
+									]
+								},
+								"description": "Upload file Excel untuk input massal. Gunakan template yang disediakan."
+							},
+							"response": [
+								{
+									"name": "Success Import",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "formdata",
+											"formdata": [
+												{
+													"key": "file",
+													"description": "Upload file .xlsx / .csv di sini",
+													"type": "file",
+													"src": []
+												}
+											]
+										},
+										"url": {
+											"raw": "{{base_url}}/students/import",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"import"
+											]
+										},
+										"description": "Upload file Excel untuk input massal. Gunakan template yang disediakan."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Import successful. 48 rows inserted.\"\n    },\n    \"data\": {\n        \"total_rows\": 50,\n        \"inserted\": 48,\n        \"failed\": 2,\n        \"errors\": [\n            \"Row 5: NIS already exists\",\n            \"Row 10: Class 'XYZ' not found\"\n        ]\n    }\n}"
+								},
+								{
+									"name": "Success Import",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "formdata",
+											"formdata": [
+												{
+													"key": "file",
+													"description": "Upload file .xlsx / .csv di sini",
+													"type": "file",
+													"src": "/C:/Users/LENOVO/Documents/testimport.xlsx"
+												}
+											]
+										},
+										"url": {
+											"raw": "{{base_url}}/students/import",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"import"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": null,
+									"header": [
+										{
+											"key": "Host",
+											"value": "localhost:8000"
+										},
+										{
+											"key": "Connection",
+											"value": "close"
+										},
+										{
+											"key": "X-Powered-By",
+											"value": "PHP/8.3.11"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, private"
+										},
+										{
+											"key": "Date",
+											"value": "Mon, 22 Dec 2025 13:20:27 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Import completed. 2 students inserted, 0 failed.\"\n    },\n    \"data\": {\n        \"total_rows\": 2,\n        \"inserted\": 2,\n        \"failed\": 0,\n        \"errors\": [],\n        \"import_info\": {\n            \"sheet_name\": \"Sheet2\",\n            \"header_row\": 1,\n            \"data_start_row\": 2,\n            \"data_end_row\": 3,\n            \"column_mapping\": {\n                \"nis\": \"A\",\n                \"name\": \"B\",\n                \"address\": \"C\",\n                \"phone\": \"D\",\n                \"status\": \"E\"\n            },\n            \"sample_data\": [\n                \"Row 2: NIS='2024001', Name='Alika Azalea'\",\n                \"Row 3: NIS='2024002', Name='Budi Santoso'\"\n            ]\n        }\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "(Pagination) Student with academicYear",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{base_url}}/students/paginate?per_page={{per_page}}&page={{pages}}&year={{year}}&level=4",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"paginate"
+									],
+									"query": [
+										{
+											"key": "per_page",
+											"value": "{{per_page}}"
+										},
+										{
+											"key": "page",
+											"value": "{{pages}}"
+										},
+										{
+											"key": "year",
+											"value": "{{year}}"
+										},
+										{
+											"key": "level",
+											"value": "4"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Response",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{base_url}}/academic-years?search=2024/2025",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years"
+											],
+											"query": [
+												{
+													"key": "search",
+													"value": "2024/2025"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": null,
+									"header": [
+										{
+											"key": "Host",
+											"value": "localhost:8000"
+										},
+										{
+											"key": "Connection",
+											"value": "close"
+										},
+										{
+											"key": "X-Powered-By",
+											"value": "PHP/8.3.11"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, private"
+										},
+										{
+											"key": "Date",
+											"value": "Mon, 22 Dec 2025 13:26:29 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of academic years\"\n    },\n    \"data\": {\n        \"current_page\": 1,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"name\": \"2024/2025\",\n                \"is_active\": true,\n                \"created_at\": \"2025-12-22T13:16:51.000000Z\",\n                \"updated_at\": \"2025-12-22T13:16:51.000000Z\"\n            }\n        ],\n        \"first_page_url\": \"http://localhost:8000/api/academic-years?page=1\",\n        \"from\": 1,\n        \"last_page\": 1,\n        \"last_page_url\": \"http://localhost:8000/api/academic-years?page=1\",\n        \"links\": [\n            {\n                \"url\": null,\n                \"label\": \"&laquo; Previous\",\n                \"page\": null,\n                \"active\": false\n            },\n            {\n                \"url\": \"http://localhost:8000/api/academic-years?page=1\",\n                \"label\": \"1\",\n                \"page\": 1,\n                \"active\": true\n            },\n            {\n                \"url\": null,\n                \"label\": \"Next &raquo;\",\n                \"page\": null,\n                \"active\": false\n            }\n        ],\n        \"next_page_url\": null,\n        \"path\": \"http://localhost:8000/api/academic-years\",\n        \"per_page\": 15,\n        \"prev_page_url\": null,\n        \"to\": 1,\n        \"total\": 1\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Search Param Student",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/students/search?search={{keyword}}&year={{year}}&level=6",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"search"
+									],
+									"query": [
+										{
+											"key": "search",
+											"value": "{{keyword}}"
+										},
+										{
+											"key": "year",
+											"value": "{{year}}"
+										},
+										{
+											"key": "level",
+											"value": "6"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Search",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/students?search={{keyword}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students"
+											],
+											"query": [
+												{
+													"key": "search",
+													"value": "{{keyword}}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": null,
+									"header": [
+										{
+											"key": "Host",
+											"value": "localhost:8000"
+										},
+										{
+											"key": "Connection",
+											"value": "close"
+										},
+										{
+											"key": "X-Powered-By",
+											"value": "PHP/8.3.11"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, private"
+										},
+										{
+											"key": "Date",
+											"value": "Mon, 22 Dec 2025 13:27:27 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of students\"\n    },\n    \"data\": {\n        \"current_page\": 1,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"nis\": \"2024001\",\n                \"full_name\": \"Alika Azalea\",\n                \"address\": \"Jl. Merdeka 1\",\n                \"phone_number\": \"81234567890\",\n                \"status\": \"active\",\n                \"spp_base_fee\": \"0.00\",\n                \"created_at\": \"2025-12-22T13:20:27.000000Z\",\n                \"updated_at\": \"2025-12-22T13:20:27.000000Z\",\n                \"current_class\": null\n            },\n            {\n                \"id\": 2,\n                \"nis\": \"2024002\",\n                \"full_name\": \"Budi Santoso\",\n                \"address\": \"Jl. Sudirman 2\",\n                \"phone_number\": \"81234567891\",\n                \"status\": \"active\",\n                \"spp_base_fee\": \"0.00\",\n                \"created_at\": \"2025-12-22T13:20:27.000000Z\",\n                \"updated_at\": \"2025-12-22T13:20:27.000000Z\",\n                \"current_class\": null\n            }\n        ],\n        \"first_page_url\": \"http://localhost:8000/api/students?page=1\",\n        \"from\": 1,\n        \"last_page\": 1,\n        \"last_page_url\": \"http://localhost:8000/api/students?page=1\",\n        \"links\": [\n            {\n                \"url\": null,\n                \"label\": \"&laquo; Previous\",\n                \"page\": null,\n                \"active\": false\n            },\n            {\n                \"url\": \"http://localhost:8000/api/students?page=1\",\n                \"label\": \"1\",\n                \"page\": 1,\n                \"active\": true\n            },\n            {\n                \"url\": null,\n                \"label\": \"Next &raquo;\",\n                \"page\": null,\n                \"active\": false\n            }\n        ],\n        \"next_page_url\": null,\n        \"path\": \"http://localhost:8000/api/students\",\n        \"per_page\": 15,\n        \"prev_page_url\": null,\n        \"to\": 2,\n        \"total\": 2\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Update Student",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"nis\": \"2018003\",\r\n    \"full_name\": \"Budi Santoso\",\r\n    \"address\": \"Jl. Sudirman No. 10\",\r\n    \"phone_number\": \"08123456789\",\r\n    \"status\": \"ACTIVE\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/students/{{saved_student_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"{{saved_student_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "B. Academic History",
+					"item": [
+						{
+							"name": "1. Set Class / Promote",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"student_id\": {{saved_student_id}},\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/students/set-class",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"set-class"
+									]
+								},
+								"description": "Mendaftarkan siswa ke kelas tertentu di tahun ajaran aktif. Logic: Insert ke student_class_history."
+							},
+							"response": [
+								{
+									"name": "Success Set Class",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"student_id\": {{saved_student_id}},\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}}\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/students/set-class",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"set-class"
+											]
+										},
+										"description": "Mendaftarkan siswa ke kelas tertentu di tahun ajaran aktif. Logic: Insert ke student_class_history."
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Student assigned to class\"\n    },\n    \"data\": {\n        \"history_id\": 55,\n        \"student_name\": \"Budi Santoso\",\n        \"class_name\": \"X-IPA-1\",\n        \"academic_year\": \"2024/2025\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Bulk Promote Preview",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{base_url}}/students/bulk-promote/preview?from_academic_year_id=8&to_academic_year_id=9",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"bulk-promote",
+										"preview"
+									],
+									"query": [
+										{
+											"key": "from_academic_year_id",
+											"value": "8"
+										},
+										{
+											"key": "to_academic_year_id",
+											"value": "9"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success preview",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "{{base_url}}/students/bulk-promote/preview?from_academic_year_id=8&to_academic_year_id=9",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"bulk-promote",
+												"preview"
+											],
+											"query": [
+												{
+													"key": "from_academic_year_id",
+													"value": "8"
+												},
+												{
+													"key": "to_academic_year_id",
+													"value": "9"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": null,
+									"header": [
+										{
+											"key": "Host",
+											"value": "localhost:8000"
+										},
+										{
+											"key": "Connection",
+											"value": "close"
+										},
+										{
+											"key": "X-Powered-By",
+											"value": "PHP/8.3.11"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, private"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 01 Jan 2026 15:23:53 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Preview bulk promotion generated successfully\"\n    },\n    \"data\": {\n        \"summary\": {\n            \"total_active_students\": 281,\n            \"will_promote\": 223,\n            \"will_graduate\": 58,\n            \"will_skip_inactive\": 0\n        },\n        \"class_mapping\": [\n            {\n                \"from_class_id\": 11,\n                \"from_class_name\": \"Kelas 6.1\",\n                \"from_class_level\": \"6\",\n                \"to_class_id\": null,\n                \"to_class_name\": null,\n                \"to_class_level\": null,\n                \"student_count\": 29,\n                \"action\": \"graduate\"\n            },\n            {\n                \"from_class_id\": 12,\n                \"from_class_name\": \"Kelas 6.2\",\n                \"from_class_level\": \"6\",\n                \"to_class_id\": null,\n                \"to_class_name\": null,\n                \"to_class_level\": null,\n                \"student_count\": 29,\n                \"action\": \"graduate\"\n            },\n            {\n                \"from_class_id\": 9,\n                \"from_class_name\": \"Kelas 5.1\",\n                \"from_class_level\": \"5\",\n                \"to_class_id\": 11,\n                \"to_class_name\": \"Kelas 6.1\",\n                \"to_class_level\": \"6\",\n                \"student_count\": 18,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 10,\n                \"from_class_name\": \"Kelas 5.2\",\n                \"from_class_level\": \"5\",\n                \"to_class_id\": 12,\n                \"to_class_name\": \"Kelas 6.2\",\n                \"to_class_level\": \"6\",\n                \"student_count\": 22,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 7,\n                \"from_class_name\": \"Kelas 4.1\",\n                \"from_class_level\": \"4\",\n                \"to_class_id\": 9,\n                \"to_class_name\": \"Kelas 5.1\",\n                \"to_class_level\": \"5\",\n                \"student_count\": 25,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 8,\n                \"from_class_name\": \"Kelas 4.2\",\n                \"from_class_level\": \"4\",\n                \"to_class_id\": 10,\n                \"to_class_name\": \"Kelas 5.2\",\n                \"to_class_level\": \"5\",\n                \"student_count\": 19,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 5,\n                \"from_class_name\": \"Kelas 3.1\",\n                \"from_class_level\": \"3\",\n                \"to_class_id\": 7,\n                \"to_class_name\": \"Kelas 4.1\",\n                \"to_class_level\": \"4\",\n                \"student_count\": 26,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 6,\n                \"from_class_name\": \"Kelas 3.2\",\n                \"from_class_level\": \"3\",\n                \"to_class_id\": 8,\n                \"to_class_name\": \"Kelas 4.2\",\n                \"to_class_level\": \"4\",\n                \"student_count\": 25,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 3,\n                \"from_class_name\": \"Kelas 2.1\",\n                \"from_class_level\": \"2\",\n                \"to_class_id\": 5,\n                \"to_class_name\": \"Kelas 3.1\",\n                \"to_class_level\": \"3\",\n                \"student_count\": 19,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 4,\n                \"from_class_name\": \"Kelas 2.2\",\n                \"from_class_level\": \"2\",\n                \"to_class_id\": 6,\n                \"to_class_name\": \"Kelas 3.2\",\n                \"to_class_level\": \"3\",\n                \"student_count\": 18,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 1,\n                \"from_class_name\": \"Kelas 1.1\",\n                \"from_class_level\": \"1\",\n                \"to_class_id\": 3,\n                \"to_class_name\": \"Kelas 2.1\",\n                \"to_class_level\": \"2\",\n                \"student_count\": 25,\n                \"action\": \"promote\"\n            },\n            {\n                \"from_class_id\": 2,\n                \"from_class_name\": \"Kelas 1.2\",\n                \"from_class_level\": \"1\",\n                \"to_class_id\": 4,\n                \"to_class_name\": \"Kelas 2.2\",\n                \"to_class_level\": \"2\",\n                \"student_count\": 26,\n                \"action\": \"promote\"\n            }\n        ],\n        \"warnings\": []\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Bulk Promote Execute",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"from_academic_year_id\": 8,\r\n  \"to_academic_year_id\": 9\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/students/bulk-promote/auto",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"bulk-promote",
+										"auto"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success Execute",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"from_academic_year_id\": 8,\r\n  \"to_academic_year_id\": 9\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/students/bulk-promote/auto",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"bulk-promote",
+												"auto"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": null,
+									"header": [
+										{
+											"key": "Host",
+											"value": "localhost:8000"
+										},
+										{
+											"key": "Connection",
+											"value": "close"
+										},
+										{
+											"key": "X-Powered-By",
+											"value": "PHP/8.3.11"
+										},
+										{
+											"key": "Cache-Control",
+											"value": "no-cache, private"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 01 Jan 2026 15:30:47 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Bulk promotion completed successfully\"\n    },\n    \"data\": {\n        \"success\": true,\n        \"promoted_count\": 223,\n        \"graduated_count\": 58,\n        \"skipped_count\": 0,\n        \"failed_count\": 0,\n        \"details\": {\n            \"promoted\": [\n                {\n                    \"student_id\": 186,\n                    \"student_name\": \"Adzkia Naura Hasna Annida\",\n                    \"student_nis\": \"2021001\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 187,\n                    \"student_name\": \"Annisa Dina Raffia\",\n                    \"student_nis\": \"2021002\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 188,\n                    \"student_name\": \"Bintang Yoga Nugraha\",\n                    \"student_nis\": \"2021003\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 189,\n                    \"student_name\": \"Briliangga Ahli Herpavi\",\n                    \"student_nis\": \"2021004\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 190,\n                    \"student_name\": \"Danendra Yuan Farid Athailla\",\n                    \"student_nis\": \"2021005\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 191,\n                    \"student_name\": \"Hazafha Arya Alfarizky\",\n                    \"student_nis\": \"2021006\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 192,\n                    \"student_name\": \"Ibrahim Naufal Ar Rafif\",\n                    \"student_nis\": \"2021007\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 193,\n                    \"student_name\": \"Keenar Hana Nailatul Izzah\",\n                    \"student_nis\": \"2021008\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 194,\n                    \"student_name\": \"Kiad Adhirajasa\",\n                    \"student_nis\": \"2021009\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 195,\n                    \"student_name\": \"Kirana Ranika Anjani\",\n                    \"student_nis\": \"2021010\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 196,\n                    \"student_name\": \"Lathifa Adhiya Hafizhah Shalihah\",\n                    \"student_nis\": \"2021011\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 197,\n                    \"student_name\": \"Mohamad Deni Darmawan\",\n                    \"student_nis\": \"2021012\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 198,\n                    \"student_name\": \"Muhammad Davin Ramadhan\",\n                    \"student_nis\": \"2021013\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 199,\n                    \"student_name\": \"Rasya Muhammad Athaya\",\n                    \"student_nis\": \"2021014\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 200,\n                    \"student_name\": \"Syahrayad Aisyah Lawin\",\n                    \"student_nis\": \"2021015\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 201,\n                    \"student_name\": \"Nadia Kindi Azzahra\",\n                    \"student_nis\": \"2021016\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 202,\n                    \"student_name\": \"Azka Aliagha Iskandar\",\n                    \"student_nis\": \"2021017\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 203,\n                    \"student_name\": \"Ganesha Tsukitama Setiawan\",\n                    \"student_nis\": \"2021018\",\n                    \"from_class\": \"Kelas 5.1\",\n                    \"to_class\": \"Kelas 6.1\"\n                },\n                {\n                    \"student_id\": 204,\n                    \"student_name\": \"Afiqah Yasmina Maulida Ahmad\",\n                    \"student_nis\": \"2021019\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 205,\n                    \"student_name\": \"Aqila Faradisa Putri Nadhika\",\n                    \"student_nis\": \"2021020\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 206,\n                    \"student_name\": \"Aqueena Catzilla Diah Wiratmo\",\n                    \"student_nis\": \"2021021\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 207,\n                    \"student_name\": \"Arganta Oktorio Saputra\",\n                    \"student_nis\": \"2021022\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 208,\n                    \"student_name\": \"Arkana Khalil Anindito\",\n                    \"student_nis\": \"2021023\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 209,\n                    \"student_name\": \"Arkananta Khaizuran Pratama\",\n                    \"student_nis\": \"2021024\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 210,\n                    \"student_name\": \"Armando Hadiwijaya\",\n                    \"student_nis\": \"2021025\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 211,\n                    \"student_name\": \"Cerllia Alena Putri Damare\",\n                    \"student_nis\": \"2021026\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 212,\n                    \"student_name\": \"Darrell Arkhan Pratama\",\n                    \"student_nis\": \"2021027\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 213,\n                    \"student_name\": \"Destyan Perkasa Putra Ramadhan\",\n                    \"student_nis\": \"2021028\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 214,\n                    \"student_name\": \"Gheanina Dwi Azzalea Humaira\",\n                    \"student_nis\": \"2021029\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 215,\n                    \"student_name\": \"Jessia Ibaneza\",\n                    \"student_nis\": \"2021030\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 216,\n                    \"student_name\": \"Joaqeen Azka Vherellyto\",\n                    \"student_nis\": \"2021031\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 217,\n                    \"student_name\": \"Khiar Lail Ramadhan Nugroho\",\n                    \"student_nis\": \"2021032\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 218,\n                    \"student_name\": \"Qonita Nurul Faliah\",\n                    \"student_nis\": \"2021033\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 219,\n                    \"student_name\": \"Safa Ardina Nur Asri\",\n                    \"student_nis\": \"2021034\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 220,\n                    \"student_name\": \"Shaquilla Nufaisah Anugra\",\n                    \"student_nis\": \"2021035\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 221,\n                    \"student_name\": \"Uwais Akhtar Mahfudz\",\n                    \"student_nis\": \"2021036\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 222,\n                    \"student_name\": \"Al Falaah Jose Setiawan\",\n                    \"student_nis\": \"2021037\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 223,\n                    \"student_name\": \"Anindita Zahrana\",\n                    \"student_nis\": \"2021038\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 224,\n                    \"student_name\": \"Muhammad Fatih Darmawan\",\n                    \"student_nis\": \"2021039\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 225,\n                    \"student_name\": \"Naufal Alvino Pratama\",\n                    \"student_nis\": \"2021040\",\n                    \"from_class\": \"Kelas 5.2\",\n                    \"to_class\": \"Kelas 6.2\"\n                },\n                {\n                    \"student_id\": 226,\n                    \"student_name\": \"Adra Rachel Fatima\",\n                    \"student_nis\": \"2022001\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 227,\n                    \"student_name\": \"Althaf Fatih Alhisyam\",\n                    \"student_nis\": \"2022002\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 228,\n                    \"student_name\": \"Aqala Putri Adila\",\n                    \"student_nis\": \"2022003\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 229,\n                    \"student_name\": \"Aqila Putri Adila\",\n                    \"student_nis\": \"2022004\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 230,\n                    \"student_name\": \"Arya Rakananta\",\n                    \"student_nis\": \"2022005\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 231,\n                    \"student_name\": \"Azzahra Prameswari Renata S\",\n                    \"student_nis\": \"2022006\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 232,\n                    \"student_name\": \"Azzalea Atiqah Amanina\",\n                    \"student_nis\": \"2022007\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 233,\n                    \"student_name\": \"Benandy Abimata D\",\n                    \"student_nis\": \"2022008\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 234,\n                    \"student_name\": \"Bonum Ventageano\",\n                    \"student_nis\": \"2022009\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 235,\n                    \"student_name\": \"Danish Silmi Ramadhan\",\n                    \"student_nis\": \"2022010\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 236,\n                    \"student_name\": \"Fatikha Ayatin Husna\",\n                    \"student_nis\": \"2022011\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 237,\n                    \"student_name\": \"Fatin Alesa Putri\",\n                    \"student_nis\": \"2022012\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 238,\n                    \"student_name\": \"Hafizh Rafi Rabbani\",\n                    \"student_nis\": \"2022013\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 239,\n                    \"student_name\": \"Hanania Khalila\",\n                    \"student_nis\": \"2022014\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 240,\n                    \"student_name\": \"Muhammad Agam Meshach A\",\n                    \"student_nis\": \"2022015\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 241,\n                    \"student_name\": \"Muhammad Alfaith Habiburrahman\",\n                    \"student_nis\": \"2022016\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 242,\n                    \"student_name\": \"Muhammad Arsya narendra\",\n                    \"student_nis\": \"2022017\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 243,\n                    \"student_name\": \"Ni Putu Manik Anindya Nari W\",\n                    \"student_nis\": \"2022018\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 244,\n                    \"student_name\": \"Nianda Meisya Onefill\",\n                    \"student_nis\": \"2022019\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 245,\n                    \"student_name\": \"Rayhan Dhiwa A\",\n                    \"student_nis\": \"2022020\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 246,\n                    \"student_name\": \"Asyifa Qinara\",\n                    \"student_nis\": \"2022021\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 247,\n                    \"student_name\": \"Adipati Ganta Sabrana\",\n                    \"student_nis\": \"2022022\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 248,\n                    \"student_name\": \"Cahaya Mahmuda\",\n                    \"student_nis\": \"2022023\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 249,\n                    \"student_name\": \"Claresta Agna Lovexia\",\n                    \"student_nis\": \"2022024\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 250,\n                    \"student_name\": \"Al Gibran Ivander Jatiasmara\",\n                    \"student_nis\": \"2022025\",\n                    \"from_class\": \"Kelas 4.1\",\n                    \"to_class\": \"Kelas 5.1\"\n                },\n                {\n                    \"student_id\": 251,\n                    \"student_name\": \"Abinaya Runako Alexi\",\n                    \"student_nis\": \"2022026\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 252,\n                    \"student_name\": \"Adent Mas Damar Gatra\",\n                    \"student_nis\": \"2022027\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 253,\n                    \"student_name\": \"Andra Reyzha\",\n                    \"student_nis\": \"2022028\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 254,\n                    \"student_name\": \"Anindita Keisya Zahra\",\n                    \"student_nis\": \"2022029\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 255,\n                    \"student_name\": \"Archelyana Taviesha Sarasvati\",\n                    \"student_nis\": \"2022030\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 256,\n                    \"student_name\": \"Arsahka Hanan Ismail\",\n                    \"student_nis\": \"2022031\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 257,\n                    \"student_name\": \"Asifa Puspita Aryanto\",\n                    \"student_nis\": \"2022032\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 258,\n                    \"student_name\": \"Azarine Faeyza Kiar Prasetyo\",\n                    \"student_nis\": \"2022033\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 259,\n                    \"student_name\": \"Dzaky Denta Alfatih\",\n                    \"student_nis\": \"2022034\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 260,\n                    \"student_name\": \"Muhammad Alifiandra Naufal Argani\",\n                    \"student_nis\": \"2022035\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 261,\n                    \"student_name\": \"Muhammad Alby Raffa F\",\n                    \"student_nis\": \"2022036\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 262,\n                    \"student_name\": \"Muhammad Dzaky Nur Fauzan\",\n                    \"student_nis\": \"2022037\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 263,\n                    \"student_name\": \"Nadhira Ayundita\",\n                    \"student_nis\": \"2022038\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 264,\n                    \"student_name\": \"Solehah\",\n                    \"student_nis\": \"2022039\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 265,\n                    \"student_name\": \"Syakira Nur Arfanda\",\n                    \"student_nis\": \"2022040\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 266,\n                    \"student_name\": \"Taqiyya Sakha Althafunnisa\",\n                    \"student_nis\": \"2022041\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 267,\n                    \"student_name\": \"Zulvano Ar-ra'uf Fitra Rahmatulloh\",\n                    \"student_nis\": \"2022042\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 268,\n                    \"student_name\": \"Mikayla Ar Rahma\",\n                    \"student_nis\": \"2022043\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 269,\n                    \"student_name\": \"Fadli Abizar Ramadhan\",\n                    \"student_nis\": \"2022044\",\n                    \"from_class\": \"Kelas 4.2\",\n                    \"to_class\": \"Kelas 5.2\"\n                },\n                {\n                    \"student_id\": 270,\n                    \"student_name\": \"Abid Wahyu Narendra\",\n                    \"student_nis\": \"2023001\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 271,\n                    \"student_name\": \"Abida Fitria\",\n                    \"student_nis\": \"2023002\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 272,\n                    \"student_name\": \"Afifuddin Yusuf\",\n                    \"student_nis\": \"2023003\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 273,\n                    \"student_name\": \"Alula Keenar Beneamata\",\n                    \"student_nis\": \"2023004\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 274,\n                    \"student_name\": \"Anindya Faiha Faliah\",\n                    \"student_nis\": \"2023005\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 275,\n                    \"student_name\": \"Annisa Nurul Shafina\",\n                    \"student_nis\": \"2023006\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 276,\n                    \"student_name\": \"Aqila Khanza Mahesi\",\n                    \"student_nis\": \"2023007\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 277,\n                    \"student_name\": \"Ar-Rasyid Gemie Richardio\",\n                    \"student_nis\": \"2023008\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 278,\n                    \"student_name\": \"Aryasatya Lawana\",\n                    \"student_nis\": \"2023009\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 279,\n                    \"student_name\": \"Davina Anindya Calista Irawan\",\n                    \"student_nis\": \"2023010\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 280,\n                    \"student_name\": \"Donna Sabia Adara Nasution\",\n                    \"student_nis\": \"2023011\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 281,\n                    \"student_name\": \"Iman Taufik Rachman\",\n                    \"student_nis\": \"2023012\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 282,\n                    \"student_name\": \"Jabriel Rakanarendra\",\n                    \"student_nis\": \"2023013\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 283,\n                    \"student_name\": \"Kayla Balqis Ferdiansah\",\n                    \"student_nis\": \"2023014\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 284,\n                    \"student_name\": \"Maryam Jasmine Utami\",\n                    \"student_nis\": \"2023015\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 285,\n                    \"student_name\": \"Muhammad Ali Ramadhan Putra\",\n                    \"student_nis\": \"2023016\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 286,\n                    \"student_name\": \"Muhammad Hamengku Majid\",\n                    \"student_nis\": \"2023017\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 287,\n                    \"student_name\": \"Muhammad Naufal Tirta Abidzar\",\n                    \"student_nis\": \"2023018\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 288,\n                    \"student_name\": \"Mutiara Brenda Noviani\",\n                    \"student_nis\": \"2023019\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 289,\n                    \"student_name\": \"Naura Shava Azzahra\",\n                    \"student_nis\": \"2023020\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 290,\n                    \"student_name\": \"Raisya Almashyra\",\n                    \"student_nis\": \"2023021\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 291,\n                    \"student_name\": \"Rakabima Maulana\",\n                    \"student_nis\": \"2023022\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 292,\n                    \"student_name\": \"Zainab Hamida Al Hamid\",\n                    \"student_nis\": \"2023023\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 293,\n                    \"student_name\": \"Raditya Haikal Iskandar\",\n                    \"student_nis\": \"2023024\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 294,\n                    \"student_name\": \"Prabu Ataya Pinandita\",\n                    \"student_nis\": \"2023025\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 295,\n                    \"student_name\": \"Nabila Dian Arista\",\n                    \"student_nis\": \"2023026\",\n                    \"from_class\": \"Kelas 3.1\",\n                    \"to_class\": \"Kelas 4.1\"\n                },\n                {\n                    \"student_id\": 296,\n                    \"student_name\": \"Abizar Syailendra Prasetya\",\n                    \"student_nis\": \"2023027\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 297,\n                    \"student_name\": \"Aila Shakila Yanika\",\n                    \"student_nis\": \"2023028\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 298,\n                    \"student_name\": \"Alan Razan Fahri\",\n                    \"student_nis\": \"2023029\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 299,\n                    \"student_name\": \"Albi Nur Riskina\",\n                    \"student_nis\": \"2023030\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 300,\n                    \"student_name\": \"Aldric Aruna Rayiaji\",\n                    \"student_nis\": \"2023031\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 301,\n                    \"student_name\": \"Aquina Bellvania Nasyira Bawono\",\n                    \"student_nis\": \"2023032\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 302,\n                    \"student_name\": \"Arshakan Reynand H\",\n                    \"student_nis\": \"2023033\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 303,\n                    \"student_name\": \"Attariz Dyota Davinse\",\n                    \"student_nis\": \"2023034\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 304,\n                    \"student_name\": \"Azalea Khaliqa Rumiva Bilqis Andriana\",\n                    \"student_nis\": \"2023035\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 305,\n                    \"student_name\": \"Azkadina Eka Marvella\",\n                    \"student_nis\": \"2023036\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 306,\n                    \"student_name\": \"Deviko Raihan T.S\",\n                    \"student_nis\": \"2023037\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 307,\n                    \"student_name\": \"Fenny Nur Ambarwati\",\n                    \"student_nis\": \"2023038\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 308,\n                    \"student_name\": \"Gissel Arsyana Putri\",\n                    \"student_nis\": \"2023039\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 309,\n                    \"student_name\": \"Malaeka Farzana Hamani\",\n                    \"student_nis\": \"2023040\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 310,\n                    \"student_name\": \"Muhammad Erland Abid Runako\",\n                    \"student_nis\": \"2023041\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 311,\n                    \"student_name\": \"Praveena Violin Elsa Zaren\",\n                    \"student_nis\": \"2023042\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 312,\n                    \"student_name\": \"Raisa Humaira\",\n                    \"student_nis\": \"2023043\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 313,\n                    \"student_name\": \"Rania Humaira Noor Latifa\",\n                    \"student_nis\": \"2023044\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 314,\n                    \"student_name\": \"Riyan Putra Tama\",\n                    \"student_nis\": \"2023045\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 315,\n                    \"student_name\": \"Zaen Fafa Saputra\",\n                    \"student_nis\": \"2023046\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 316,\n                    \"student_name\": \"Zhafira Kanaya Mardalasta\",\n                    \"student_nis\": \"2023047\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 317,\n                    \"student_name\": \"Zafran Mikail\",\n                    \"student_nis\": \"2023048\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 318,\n                    \"student_name\": \"Yusuf Hiroshi Darmawan\",\n                    \"student_nis\": \"2023049\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 319,\n                    \"student_name\": \"Azkadina Athaya Mahardiko\",\n                    \"student_nis\": \"2023050\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 320,\n                    \"student_name\": \"Sultan Abdullah Pinandita\",\n                    \"student_nis\": \"2023051\",\n                    \"from_class\": \"Kelas 3.2\",\n                    \"to_class\": \"Kelas 4.2\"\n                },\n                {\n                    \"student_id\": 321,\n                    \"student_name\": \"Adyatma Serkan Ramazan\",\n                    \"student_nis\": \"2024001\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 322,\n                    \"student_name\": \"Aisha Syifa El Medina\",\n                    \"student_nis\": \"2024002\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 323,\n                    \"student_name\": \"Alfarezi Ramadhan\",\n                    \"student_nis\": \"2024003\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 324,\n                    \"student_name\": \"Athaya Putri Qirani\",\n                    \"student_nis\": \"2024004\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 325,\n                    \"student_name\": \"Ayra Savina Rayadhanti\",\n                    \"student_nis\": \"2024005\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 326,\n                    \"student_name\": \"Bilal Aksani Akbar\",\n                    \"student_nis\": \"2024006\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 327,\n                    \"student_name\": \"Devania Oktavia Fiorenza\",\n                    \"student_nis\": \"2024007\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 328,\n                    \"student_name\": \"Dixie Kusnan Atmojo\",\n                    \"student_nis\": \"2024008\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 329,\n                    \"student_name\": \"Geosava Maliki Irawan\",\n                    \"student_nis\": \"2024009\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 330,\n                    \"student_name\": \"Ibrahim Ramadhan Al Ghazi\",\n                    \"student_nis\": \"2024010\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 331,\n                    \"student_name\": \"Inara Aileen\",\n                    \"student_nis\": \"2024011\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 332,\n                    \"student_name\": \"Meysha Azalea Ramadhan\",\n                    \"student_nis\": \"2024012\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 333,\n                    \"student_name\": \"Muhammad Brian Ibrahim\",\n                    \"student_nis\": \"2024013\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 334,\n                    \"student_name\": \"Raihan Cahyo Purnomo\",\n                    \"student_nis\": \"2024014\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 335,\n                    \"student_name\": \"Rasya Athayya Mahardika\",\n                    \"student_nis\": \"2024015\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 336,\n                    \"student_name\": \"Rivaliant Kahfi Fatir Ergantara\",\n                    \"student_nis\": \"2024016\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 337,\n                    \"student_name\": \"Rizky Hutama\",\n                    \"student_nis\": \"2024017\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 338,\n                    \"student_name\": \"Shakila Ayra Khairina\",\n                    \"student_nis\": \"2024018\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 339,\n                    \"student_name\": \"Umaila Sheza\",\n                    \"student_nis\": \"2024019\",\n                    \"from_class\": \"Kelas 2.1\",\n                    \"to_class\": \"Kelas 3.1\"\n                },\n                {\n                    \"student_id\": 340,\n                    \"student_name\": \"Adhara Khayra Mahardiko\",\n                    \"student_nis\": \"2024020\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 341,\n                    \"student_name\": \"Ahsan Fawwas Affandi\",\n                    \"student_nis\": \"2024021\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 342,\n                    \"student_name\": \"Almera Hana Farisha\",\n                    \"student_nis\": \"2024022\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 343,\n                    \"student_name\": \"Attaya Gibran Ravindra\",\n                    \"student_nis\": \"2024023\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 344,\n                    \"student_name\": \"Daymauza Arashsyal Ribowo\",\n                    \"student_nis\": \"2024024\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 345,\n                    \"student_name\": \"Falisha Khanza Adzkiya\",\n                    \"student_nis\": \"2024025\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 346,\n                    \"student_name\": \"Gaalvan Kunjasson\",\n                    \"student_nis\": \"2024026\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 347,\n                    \"student_name\": \"Gempita Manggar Ayu\",\n                    \"student_nis\": \"2024027\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 348,\n                    \"student_name\": \"Hafizh Erdogan\",\n                    \"student_nis\": \"2024028\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 349,\n                    \"student_name\": \"Hasan Maulana Yusuf\",\n                    \"student_nis\": \"2024029\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 350,\n                    \"student_name\": \"Khalya Qurota Ayun\",\n                    \"student_nis\": \"2024030\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 351,\n                    \"student_name\": \"Muhammad Arka A\",\n                    \"student_nis\": \"2024031\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 352,\n                    \"student_name\": \"Muhammad Fattah\",\n                    \"student_nis\": \"2024032\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 353,\n                    \"student_name\": \"Muhammad Furqon Raffiansyuri\",\n                    \"student_nis\": \"2024033\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 354,\n                    \"student_name\": \"Nadia Kayra Azmya\",\n                    \"student_nis\": \"2024034\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 355,\n                    \"student_name\": \"Raditya Reyhan\",\n                    \"student_nis\": \"2024035\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 356,\n                    \"student_name\": \"Reynand Il Principino Faeyza\",\n                    \"student_nis\": \"2024036\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 357,\n                    \"student_name\": \"Sufi Azka Rizqulloh\",\n                    \"student_nis\": \"2024037\",\n                    \"from_class\": \"Kelas 2.2\",\n                    \"to_class\": \"Kelas 3.2\"\n                },\n                {\n                    \"student_id\": 358,\n                    \"student_name\": \"Alika Azalea Qinara\",\n                    \"student_nis\": \"2025001\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 359,\n                    \"student_name\": \"Arjuna Arrasyad\",\n                    \"student_nis\": \"2025002\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 360,\n                    \"student_name\": \"Arjuna Rachmadi Dhananjaya\",\n                    \"student_nis\": \"2025003\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 361,\n                    \"student_name\": \"Arshaka Tsabit Adnan\",\n                    \"student_nis\": \"2025004\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 362,\n                    \"student_name\": \"Ashadea Safa Kharisma\",\n                    \"student_nis\": \"2025005\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 363,\n                    \"student_name\": \"Athalla Raffasya Alfarizi Aryanto\",\n                    \"student_nis\": \"2025006\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 364,\n                    \"student_name\": \"Atharva Bimasena R\",\n                    \"student_nis\": \"2025007\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 365,\n                    \"student_name\": \"Atthar Virendra Adyatama\",\n                    \"student_nis\": \"2025008\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 366,\n                    \"student_name\": \"Davine Alvaro Septiano\",\n                    \"student_nis\": \"2025009\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 367,\n                    \"student_name\": \"Dzulfikri Hafidz Abdurrahman\",\n                    \"student_nis\": \"2025010\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 368,\n                    \"student_name\": \"Fatimatuzzahra\",\n                    \"student_nis\": \"2025011\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 369,\n                    \"student_name\": \"Ibrahim Alfarizy L\",\n                    \"student_nis\": \"2025012\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 370,\n                    \"student_name\": \"Kiana Rinjani T\",\n                    \"student_nis\": \"2025013\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 371,\n                    \"student_name\": \"Labeeba Balqish Himawan\",\n                    \"student_nis\": \"2025014\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 372,\n                    \"student_name\": \"Mahika Nadhira S\",\n                    \"student_nis\": \"2025015\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 373,\n                    \"student_name\": \"Maulana Adnan Suwandi\",\n                    \"student_nis\": \"2025016\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 374,\n                    \"student_name\": \"Maulana Ersya Mahendra\",\n                    \"student_nis\": \"2025017\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 375,\n                    \"student_name\": \"Muhammad Faizal Mahardika\",\n                    \"student_nis\": \"2025018\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 376,\n                    \"student_name\": \"Muhammad Irfan Rido Maulidi\",\n                    \"student_nis\": \"2025019\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 377,\n                    \"student_name\": \"Nadiya Shayna Azarine\",\n                    \"student_nis\": \"2025020\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 378,\n                    \"student_name\": \"Putri Nurmagfirah\",\n                    \"student_nis\": \"2025021\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 379,\n                    \"student_name\": \"Rayyanka Arcello Prasetyo\",\n                    \"student_nis\": \"2025022\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 380,\n                    \"student_name\": \"Reyhan Attala Jefarullah Biyansah\",\n                    \"student_nis\": \"2025023\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 381,\n                    \"student_name\": \"Rona Aulia Azka\",\n                    \"student_nis\": \"2025024\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 382,\n                    \"student_name\": \"Tisha Aina Callia\",\n                    \"student_nis\": \"2025025\",\n                    \"from_class\": \"Kelas 1.1\",\n                    \"to_class\": \"Kelas 2.1\"\n                },\n                {\n                    \"student_id\": 383,\n                    \"student_name\": \"Adyatma Alby Davie\",\n                    \"student_nis\": \"2025026\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 384,\n                    \"student_name\": \"Adzana Syifa Mayhelka\",\n                    \"student_nis\": \"2025027\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 385,\n                    \"student_name\": \"Alfath Khalifatulllah Chandra\",\n                    \"student_nis\": \"2025028\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 386,\n                    \"student_name\": \"Alfayra Zahira Queesha\",\n                    \"student_nis\": \"2025029\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 387,\n                    \"student_name\": \"Ammar Hafidz Y\",\n                    \"student_nis\": \"2025030\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 388,\n                    \"student_name\": \"Anishatun Nur Afidah\",\n                    \"student_nis\": \"2025031\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 389,\n                    \"student_name\": \"Arsyila Salma Z\",\n                    \"student_nis\": \"2025032\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 390,\n                    \"student_name\": \"Azka Alvaro Rofii\",\n                    \"student_nis\": \"2025033\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 391,\n                    \"student_name\": \"Cellonika Raqeesha\",\n                    \"student_nis\": \"2025034\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 392,\n                    \"student_name\": \"Chairul Rizqi Ardana\",\n                    \"student_nis\": \"2025035\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 393,\n                    \"student_name\": \"Diajeng Anisa R.K\",\n                    \"student_nis\": \"2025036\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 394,\n                    \"student_name\": \"Dinantia Ghina Nur Slavina\",\n                    \"student_nis\": \"2025037\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 395,\n                    \"student_name\": \"Evano Kaivan Radhika\",\n                    \"student_nis\": \"2025038\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 396,\n                    \"student_name\": \"Hero Axel Wijaya\",\n                    \"student_nis\": \"2025039\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 397,\n                    \"student_name\": \"Lazuardi Anggara P\",\n                    \"student_nis\": \"2025040\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 398,\n                    \"student_name\": \"Lintang Artanabil Alfatih\",\n                    \"student_nis\": \"2025041\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 399,\n                    \"student_name\": \"Mikayla Najwa Hafizah\",\n                    \"student_nis\": \"2025042\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 400,\n                    \"student_name\": \"Muhammad Aqmal Maulana\",\n                    \"student_nis\": \"2025043\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 401,\n                    \"student_name\": \"Nadzan Adrian Ozza\",\n                    \"student_nis\": \"2025044\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 402,\n                    \"student_name\": \"Putri Aisyah Kirana\",\n                    \"student_nis\": \"2025045\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 403,\n                    \"student_name\": \"Satriyo Alkahfi Pinandita\",\n                    \"student_nis\": \"2025046\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 404,\n                    \"student_name\": \"Shaumi Zoya Almeira\",\n                    \"student_nis\": \"2025047\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 405,\n                    \"student_name\": \"Sulthan Al Gifari Arshaq Permana\",\n                    \"student_nis\": \"2025048\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 406,\n                    \"student_name\": \"Syauqi Muhammad Abimanyu\",\n                    \"student_nis\": \"2025049\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 407,\n                    \"student_name\": \"Wulan Rahmawati\",\n                    \"student_nis\": \"2025050\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                },\n                {\n                    \"student_id\": 408,\n                    \"student_name\": \"Zakhyra Queena Dewi Nugraha\",\n                    \"student_nis\": \"2025051\",\n                    \"from_class\": \"Kelas 1.2\",\n                    \"to_class\": \"Kelas 2.2\"\n                }\n            ],\n            \"graduated\": [\n                {\n                    \"student_id\": 128,\n                    \"student_name\": \"Abi An Annafi\",\n                    \"student_nis\": \"2020001\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 129,\n                    \"student_name\": \"Aditya Rizky Prasetyo\",\n                    \"student_nis\": \"2020002\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 130,\n                    \"student_name\": \"Adnan Apriliantoro\",\n                    \"student_nis\": \"2020003\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 131,\n                    \"student_name\": \"Adwa Negara Ashaq\",\n                    \"student_nis\": \"2020004\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 132,\n                    \"student_name\": \"Afika Tona Nirmala\",\n                    \"student_nis\": \"2020005\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 133,\n                    \"student_name\": \"Ahmad Rafiq Fauzan\",\n                    \"student_nis\": \"2020006\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 134,\n                    \"student_name\": \"Aidhán Faris Mahardika\",\n                    \"student_nis\": \"2020007\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 135,\n                    \"student_name\": \"Alzena Khaira Fijratullah\",\n                    \"student_nis\": \"2020008\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 136,\n                    \"student_name\": \"Ama Dea Moza\",\n                    \"student_nis\": \"2020009\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 137,\n                    \"student_name\": \"Bahy Azka Samba Pratama\",\n                    \"student_nis\": \"2020010\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 138,\n                    \"student_name\": \"Bastian Eram Alvaro\",\n                    \"student_nis\": \"2020011\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 139,\n                    \"student_name\": \"Diego Sabiq Pratama N\",\n                    \"student_nis\": \"2020012\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 140,\n                    \"student_name\": \"Hamdan Akif Khoiruddin\",\n                    \"student_nis\": \"2020013\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 141,\n                    \"student_name\": \"Khrisna Aryasatya Putra\",\n                    \"student_nis\": \"2020014\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 142,\n                    \"student_name\": \"May Diana Luthfi Kuntari\",\n                    \"student_nis\": \"2020015\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 143,\n                    \"student_name\": \"Muhammad Clearsta Seno F\",\n                    \"student_nis\": \"2020016\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 144,\n                    \"student_name\": \"Muchammad Arthur Fabian\",\n                    \"student_nis\": \"2020017\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 145,\n                    \"student_name\": \"Muhammad Fauzan Athaya\",\n                    \"student_nis\": \"2020018\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 146,\n                    \"student_name\": \"Muhammad Rajiv Gilbran M\",\n                    \"student_nis\": \"2020019\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 147,\n                    \"student_name\": \"Najwa Aurora Montana\",\n                    \"student_nis\": \"2020020\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 148,\n                    \"student_name\": \"Nazura Khansa Izzatunnisa\",\n                    \"student_nis\": \"2020021\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 149,\n                    \"student_name\": \"Nindya Tasyamulyra R\",\n                    \"student_nis\": \"2020022\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 150,\n                    \"student_name\": \"R Bintang Pratama Sidik\",\n                    \"student_nis\": \"2020023\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 151,\n                    \"student_name\": \"Rafael Akbar Alvaronizam\",\n                    \"student_nis\": \"2020024\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 152,\n                    \"student_name\": \"Razita Nadya Salsabila Fajria\",\n                    \"student_nis\": \"2020025\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 153,\n                    \"student_name\": \"Rohmatian Bintang Pratama\",\n                    \"student_nis\": \"2020026\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 154,\n                    \"student_name\": \"Satria Putra\",\n                    \"student_nis\": \"2020027\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 155,\n                    \"student_name\": \"Yasmin Ardini\",\n                    \"student_nis\": \"2020028\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 156,\n                    \"student_name\": \"Faiqa Hasna Cahyaningrum\",\n                    \"student_nis\": \"2020029\",\n                    \"from_class\": \"Kelas 6.1\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 157,\n                    \"student_name\": \"Aisha Larasati\",\n                    \"student_nis\": \"2020030\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 158,\n                    \"student_name\": \"Al Bias Sinar Maulana\",\n                    \"student_nis\": \"2020031\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 159,\n                    \"student_name\": \"Aprillio Azkha Saputra\",\n                    \"student_nis\": \"2020032\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 160,\n                    \"student_name\": \"Aqilah Rizqiana\",\n                    \"student_nis\": \"2020033\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 161,\n                    \"student_name\": \"Aysha Sakha Salsabila\",\n                    \"student_nis\": \"2020034\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 162,\n                    \"student_name\": \"Azizah Faikhahur Rahma\",\n                    \"student_nis\": \"2020035\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 163,\n                    \"student_name\": \"Belmiro Ozil Tahara\",\n                    \"student_nis\": \"2020036\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 164,\n                    \"student_name\": \"Cheryl Fiorenza El Java\",\n                    \"student_nis\": \"2020037\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 165,\n                    \"student_name\": \"Dahayu Pramusita Ubadilah\",\n                    \"student_nis\": \"2020038\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 166,\n                    \"student_name\": \"Dyah Ayu Rana Wijaya\",\n                    \"student_nis\": \"2020039\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 167,\n                    \"student_name\": \"Elua Yumna Raihanah\",\n                    \"student_nis\": \"2020040\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 168,\n                    \"student_name\": \"Faeyza Al Ziqri\",\n                    \"student_nis\": \"2020041\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 169,\n                    \"student_name\": \"Farras Hazim Arhanu\",\n                    \"student_nis\": \"2020042\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 170,\n                    \"student_name\": \"Fauzan Afkar Ananta\",\n                    \"student_nis\": \"2020043\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 171,\n                    \"student_name\": \"Fauzi Afif Ananta\",\n                    \"student_nis\": \"2020044\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 172,\n                    \"student_name\": \"Isma Afifah Hasna Putri P\",\n                    \"student_nis\": \"2020045\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 173,\n                    \"student_name\": \"Nadina Marinka Kirana Putri\",\n                    \"student_nis\": \"2020046\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 174,\n                    \"student_name\": \"Najwa Saskia Dzakira\",\n                    \"student_nis\": \"2020047\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 175,\n                    \"student_name\": \"Nandana Azka Alfajri\",\n                    \"student_nis\": \"2020048\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 176,\n                    \"student_name\": \"Naura Gendis Az Zahra\",\n                    \"student_nis\": \"2020049\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 177,\n                    \"student_name\": \"Nur Ibrahim Putra Purnomo\",\n                    \"student_nis\": \"2020050\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 178,\n                    \"student_name\": \"Nur Kholis\",\n                    \"student_nis\": \"2020051\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 179,\n                    \"student_name\": \"Rafa Azmi Nurdiansyah\",\n                    \"student_nis\": \"2020052\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 180,\n                    \"student_name\": \"Rafif Kevin Ubaid W\",\n                    \"student_nis\": \"2020053\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 181,\n                    \"student_name\": \"Raisya Ilham Mayhelka\",\n                    \"student_nis\": \"2020054\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 182,\n                    \"student_name\": \"Shafwan Rafa Arfandi\",\n                    \"student_nis\": \"2020055\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 183,\n                    \"student_name\": \"Syeni Agustina Lavizi\",\n                    \"student_nis\": \"2020056\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 184,\n                    \"student_name\": \"Zaki Arafi\",\n                    \"student_nis\": \"2020057\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                },\n                {\n                    \"student_id\": 185,\n                    \"student_name\": \"Zalfa Faa'Izaty Marhandika\",\n                    \"student_nis\": \"2020058\",\n                    \"from_class\": \"Kelas 6.2\",\n                    \"status\": \"graduated\"\n                }\n            ],\n            \"skipped\": [],\n            \"failed\": []\n        }\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "C. Student Account",
+					"item": [
+						{
+							"name": "1. Generate User Account",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/students/{{saved_student_id}}/create-user",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"students",
+										"{{saved_student_id}}",
+										"create-user"
+									]
+								},
+								"description": "Otomatis membuat user login untuk siswa. Username = NIS, Password Default = 123456."
+							},
+							"response": [
+								{
+									"name": "Success Generate",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/students/{{saved_student_id}}/create-user",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"{{saved_student_id}}",
+												"create-user"
+											]
+										},
+										"description": "Otomatis membuat user login untuk siswa. Username = NIS, Password Default = 123456."
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"User account created\"\n    },\n    \"data\": {\n        \"user_id\": 20,\n        \"username\": \"2024001\",\n        \"role\": \"student\"\n    }\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "04. Modul Tagihan (Invoicing)",
+			"item": [
+				{
+					"name": "1. Create Invoice (Single)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"    // PENTING: Simpan ID Invoice untuk tes pembayaran nanti",
+									"    pm.environment.set(\"saved_invoice_id\", jsonData.data.id);",
+									"    console.log(\"✅ Invoice ID Saved: \" + jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "\n{\n    \"student_id\": 400,\n    \"fee_category_id\": 1,\n    \"period_month\": 1,\n    \"academic_year_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices"
+							]
+						},
+						"description": "Membuat tagihan untuk 1 siswa. \nLogic Backend: Loop items, copy harga dari fee_categories, hitung total_amount."
+					},
+					"response": [
+						{
+							"name": "Success Create",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"student_id\": {{saved_student_id}},\n    \"academic_year_id\": {{active_academic_year_id}},\n    \"due_date\": \"2024-02-20\",\n    \"items\": [\n        {\n            \"fee_category_id\": {{saved_fee_category_id}},\n            \"description\": \"SPP Februari 2024\" \n            // Backend otomatis ambil harga dari Master Fee (Snapshot)\n        },\n        {\n            \"fee_category_id\": {{saved_fee_category_id}},\n            \"description\": \"Denda Keterlambatan (Custom)\",\n            \"custom_amount\": 25000 \n            // Contoh jika Admin override harga manual\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/invoices",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices"
+									]
+								},
+								"description": "Membuat tagihan untuk 1 siswa. \nLogic Backend: Loop items, copy harga dari fee_categories, hitung total_amount."
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Invoice generated successfully\"\n    },\n    \"data\": {\n        \"id\": 501,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"student_name\": \"Budi Santoso\",\n        \"total_amount\": 525000,\n        \"status\": \"UNPAID\",\n        \"items_count\": 2\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "2. Create Invoice (Bulk per Class)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}},\n    \"period_month\": 10,\n    \"fee_category_id\": {{saved_fee_category_id}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/invoices/bulk",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"bulk"
+							]
+						},
+						"description": "Generate tagihan untuk SEMUA siswa di kelas tertentu. Gunakan Queue Job di backend jika siswa > 100."
+					},
+					"response": [
+						{
+							"name": "Success Bulk Create",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}},\n    \"due_date\": \"2024-03-20\",\n    \"items\": [\n        {\n            \"fee_category_id\": {{saved_fee_category_id}}\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/invoices/bulk",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"bulk"
+									]
+								},
+								"description": "Generate tagihan untuk SEMUA siswa di kelas tertentu. Gunakan Queue Job di backend jika siswa > 100."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Bulk invoice generation started\"\n    },\n    \"data\": {\n        \"processed_count\": 32,\n        \"class_target\": \"X-IPA-1\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "3. Get Invoice Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"{{saved_invoice_id}}"
+							]
+						},
+						"description": "Melihat detail Header + Items + History Pembayaran."
+					},
+					"response": [
+						{
+							"name": "Success Detail",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"{{saved_invoice_id}}"
+									]
+								},
+								"description": "Melihat detail Header + Items + History Pembayaran."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Invoice detail fetched\"\n    },\n    \"data\": {\n        \"id\": 501,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"status\": \"UNPAID\",\n        \"total_amount\": 525000,\n        \"paid_amount\": 0,\n        \"items\": [\n            {\n                \"id\": 1,\n                \"description\": \"SPP Februari 2024\",\n                \"amount\": 500000\n            },\n            {\n                \"id\": 2,\n                \"description\": \"Denda Keterlambatan (Custom)\",\n                \"amount\": 25000\n            }\n        ],\n        \"payments\": []\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "4. List My Invoices (Siswa)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{student_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invoices/my?status=UNPAID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"my"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "UNPAID",
+									"description": "Filter: UNPAID, PAID, PARTIAL"
+								}
+							]
+						},
+						"description": "Endpoint khusus Siswa. Menggunakan Student Token."
+					},
+					"response": [
+						{
+							"name": "Success List (My)",
+							"originalRequest": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{student_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/my?status=UNPAID",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"my"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "UNPAID",
+											"description": "Filter: UNPAID, PAID, PARTIAL"
+										}
+									]
+								},
+								"description": "Endpoint khusus Siswa. Menggunakan Student Token."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"My invoices fetched\"\n    },\n    \"data\": [\n        {\n            \"id\": 501,\n            \"invoice_number\": \"INV/2024/02/001\",\n            \"total_amount\": 525000,\n            \"status\": \"UNPAID\",\n            \"due_date\": \"2024-02-20\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "5. Delete Invoice (Void)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invoices/15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"15"
+							]
+						},
+						"description": "Menghapus tagihan. Syarat: paid_amount harus 0 (Belum ada pembayaran)."
+					},
+					"response": [
+						{
+							"name": "Success Delete",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"{{saved_invoice_id}}"
+									]
+								},
+								"description": "Menghapus tagihan. Syarat: paid_amount harus 0 (Belum ada pembayaran)."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Invoice deleted successfully\"\n    },\n    \"data\": null\n}"
+						},
+						{
+							"name": "Failed (Already Paid)",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/{{saved_invoice_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"{{saved_invoice_id}}"
+									]
+								},
+								"description": "Menghapus tagihan. Syarat: paid_amount harus 0 (Belum ada pembayaran)."
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 400,\n        \"status\": \"error\",\n        \"message\": \"Cannot delete invoice with existing payments.\"\n    },\n    \"data\": null\n}"
+						}
+					]
+				},
+				{
+					"name": "Import Invoices (Excel)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/LENOVO/Documents/testimport.xlsx"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/invoices/import",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"import"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate 1 Siswa Multiple SPP Bulanan",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"academic_year_id\": 1,\r\n    \"student_id\": 1,\r\n    \"months\": [\r\n        {\r\n            \"month\": 1,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-01-10\"\r\n        },\r\n        {\r\n            \"month\": 2,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-02-10\"\r\n        },\r\n        {\r\n            \"month\": 3,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-03-10\"\r\n        },\r\n        {\r\n            \"month\": 8,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-08-10\"\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/invoices/generate-missing-months",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"generate-missing-months"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Success Generate",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"academic_year_id\": 1,\r\n    \"student_id\": 1,\r\n    \"months\": [\r\n        {\r\n            \"month\": 1,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-01-10\"\r\n        },\r\n        {\r\n            \"month\": 2,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-02-10\"\r\n        },\r\n        {\r\n            \"month\": 3,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-03-10\"\r\n        },\r\n        {\r\n            \"month\": 8,\r\n            \"year\": 2025,\r\n            \"due_date\": \"2025-08-10\"\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/invoices/generate-missing-months",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"generate-missing-months"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Host",
+									"value": "localhost:8000"
+								},
+								{
+									"key": "Connection",
+									"value": "close"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "PHP/8.3.11"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 22 Dec 2025 14:07:11 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Successfully generated 4 missing invoices\"\n    },\n    \"data\": {\n        \"created\": 4,\n        \"details\": [\n            {\n                \"invoice_number\": \"INV/2025/12/0001\",\n                \"period\": \"Januari 2025\",\n                \"amount\": \"180000.00\"\n            },\n            {\n                \"invoice_number\": \"INV/2025/12/0002\",\n                \"period\": \"Februari 2025\",\n                \"amount\": \"180000.00\"\n            },\n            {\n                \"invoice_number\": \"INV/2025/12/0003\",\n                \"period\": \"Maret 2025\",\n                \"amount\": \"180000.00\"\n            },\n            {\n                \"invoice_number\": \"INV/2025/12/0004\",\n                \"period\": \"Agustus 2025\",\n                \"amount\": \"180000.00\"\n            }\n        ]\n    }\n}"
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "05. Modul Pembayaran (Payment)",
+			"item": [
+				{
+					"name": "1. Create Payment (Cicilan/Partial)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"    // Simpan ID pembayaran ini untuk tes Cetak/Void nanti",
+									"    pm.environment.set(\"saved_payment_id\", jsonData.data.id);",
+									"    console.log(\"✅ Payment ID Saved: \" + jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"invoice_item_id\": {{saved_invoice_id}},\n    \"amount\": 200000,\n    \"payment_method\": \"CASH\",\n    \"notes\": \"Titipan via Wali Kelas\",\n    \"payment_date\": \"2025-12-31\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/payments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments"
+							]
+						},
+						"description": "Menginput pembayaran. \nLogic Backend: \n1. Insert Payment.\n2. Update Invoice.paid_amount += 200.000\n3. Cek sisa hutang. Jika > 0, set status 'PARTIAL'."
+					},
+					"response": [
+						{
+							"name": "Success Partial Payment",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"invoice_id\": {{saved_invoice_id}},\n    \"amount\": 200000,\n    \"payment_method\": \"CASH\",\n    \"notes\": \"Titipan via Wali Kelas\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/payments",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments"
+									]
+								},
+								"description": "Menginput pembayaran. \nLogic Backend: \n1. Insert Payment.\n2. Update Invoice.paid_amount += 200.000\n3. Cek sisa hutang. Jika > 0, set status 'PARTIAL'."
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Payment accepted\"\n    },\n    \"data\": {\n        \"id\": 801,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"amount_paid\": 200000,\n        \"payment_method\": \"CASH\",\n        \"invoice_status\": \"PARTIAL\",\n        \"remaining_balance\": 325000\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "2. Create Payment (Pelunasan/Full)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"invoice_id\": {{saved_invoice_id}},\n    \"amount\": 325000,\n    \"payment_method\": \"TRANSFER\",\n    \"notes\": \"Lunas\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/payments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments"
+							]
+						},
+						"description": "Membayar sisa tagihan.\nLogic Backend: Status Invoice harus berubah otomatis jadi 'PAID'."
+					},
+					"response": [
+						{
+							"name": "Success Full Payment",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"invoice_id\": {{saved_invoice_id}},\n    \"amount\": 325000,\n    \"payment_method\": \"TRANSFER\",\n    \"notes\": \"Lunas\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/payments",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments"
+									]
+								},
+								"description": "Membayar sisa tagihan.\nLogic Backend: Status Invoice harus berubah otomatis jadi 'PAID'."
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Payment accepted. Invoice is fully paid.\"\n    },\n    \"data\": {\n        \"id\": 802,\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"amount_paid\": 325000,\n        \"payment_method\": \"TRANSFER\",\n        \"invoice_status\": \"PAID\",\n        \"remaining_balance\": 0\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "3. Print Receipt (Kwitansi)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/{{saved_payment_id}}/print",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"{{saved_payment_id}}",
+								"print"
+							]
+						},
+						"description": "Download PDF bukti pembayaran spesifik (Struk Kecil)."
+					},
+					"response": [
+						{
+							"name": "Success Print (PDF)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/payments/{{saved_payment_id}}/print",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments",
+										"{{saved_payment_id}}",
+										"print"
+									]
+								},
+								"description": "Download PDF bukti pembayaran spesifik (Struk Kecil)."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/pdf"
+								}
+							],
+							"cookie": [],
+							"body": "%PDF-1.4 ... (Binary Data) ..."
+						}
+					]
+				},
+				{
+					"name": "4. Delete Payment (Void)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/{{saved_payment_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"{{saved_payment_id}}"
+							]
+						},
+						"description": "Membatalkan pembayaran. \nLogic Backend: \n1. Soft Delete Payment.\n2. Kurangi Invoice.paid_amount.\n3. Kembalikan status invoice ke PARTIAL/UNPAID."
+					},
+					"response": [
+						{
+							"name": "Success Void",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/payments/{{saved_payment_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments",
+										"{{saved_payment_id}}"
+									]
+								},
+								"description": "Membatalkan pembayaran. \nLogic Backend: \n1. Soft Delete Payment.\n2. Kurangi Invoice.paid_amount.\n3. Kembalikan status invoice ke PARTIAL/UNPAID."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Payment voided/deleted successfully\"\n    },\n    \"data\": {\n        \"invoice_number\": \"INV/2024/02/001\",\n        \"current_paid_amount\": 200000,\n        \"invoice_status\": \"PARTIAL\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "5. History Pembayaran (Log)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/history?start_date=2024-01-01&end_date=2025-12-31",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"history"
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "end_date",
+									"value": "2025-12-31"
+								}
+							]
+						},
+						"description": "Laporan uang masuk harian (rekap)."
+					},
+					"response": [
+						{
+							"name": "Success History",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/payments/history?start_date=2024-01-01&end_date=2024-12-31",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"payments",
+										"history"
+									],
+									"query": [
+										{
+											"key": "start_date",
+											"value": "2024-01-01"
+										},
+										{
+											"key": "end_date",
+											"value": "2024-12-31"
+										}
+									]
+								},
+								"description": "Laporan uang masuk harian (rekap)."
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "Text",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Payment history fetched\"\n    },\n    \"data\": [\n        {\n            \"id\": 801,\n            \"date\": \"2024-02-10\",\n            \"student_name\": \"Budi Santoso\",\n            \"amount\": 200000,\n            \"method\": \"CASH\",\n            \"processed_by\": \"Admin\"\n        }\n    ]\n}"
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		},
+		{
+			"name": "06. Modul Laporan & Dashboard",
+			"item": [
+				{
+					"name": "A. Dashboard",
+					"item": [
+						{
+							"name": "1. Admin Dashboard Stats",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/dashboard/admin",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"dashboard",
+										"admin"
+									]
+								},
+								"description": "Menampilkan ringkasan statistik untuk Home Admin. \nLogic: \n- total_income_today: Sum payments where date = today.\n- active_students_count: Count students where status = ACTIVE.\n- paid_percentage: (Count Paid Invoices / Total Invoices) * 100."
+							},
+							"response": [
+								{
+									"name": "Success Admin Stats",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/dashboard/admin",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"dashboard",
+												"admin"
+											]
+										},
+										"description": "Menampilkan ringkasan statistik untuk Home Admin. \nLogic: \n- total_income_today: Sum payments where date = today.\n- active_students_count: Count students where status = ACTIVE.\n- paid_percentage: (Count Paid Invoices / Total Invoices) * 100."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Dashboard stats fetched\"\n    },\n    \"data\": {\n        \"total_income_today\": 1500000,\n        \"total_income_month\": 45000000,\n        \"active_students_count\": 350,\n        \"paid_invoice_percentage\": 75.5,\n        \"recent_payments\": [\n            {\n                \"student\": \"Budi\",\n                \"amount\": 100000,\n                \"time\": \"10:05\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Student Dashboard Stats",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{student_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/dashboard/student",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"dashboard",
+										"student"
+									]
+								},
+								"description": "Ringkasan khusus untuk Siswa/Wali Murid. \nMenampilkan total hutang yang harus dibayar."
+							},
+							"response": [
+								{
+									"name": "Success Student Stats",
+									"originalRequest": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{student_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/dashboard/student",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"dashboard",
+												"student"
+											]
+										},
+										"description": "Ringkasan khusus untuk Siswa/Wali Murid. \nMenampilkan total hutang yang harus dibayar."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Student stats fetched\"\n    },\n    \"data\": {\n        \"student_name\": \"Budi Santoso\",\n        \"class_name\": \"X-IPA-1\",\n        \"total_outstanding_amount\": 450000,\n        \"unpaid_invoices_count\": 2,\n        \"last_payment_date\": \"2024-02-15\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "B. Reports (Laporan)",
+					"item": [
+						{
+							"name": "1. Laporan Tunggakan (Arrears)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/reports/arrears?class_id={{saved_class_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"reports",
+										"arrears"
+									],
+									"query": [
+										{
+											"key": "class_id",
+											"value": "{{saved_class_id}}",
+											"description": "Filter per kelas"
+										},
+										{
+											"key": "academic_year_id",
+											"value": "{{active_academic_year_id}}",
+											"description": "Filter tahun ajaran",
+											"disabled": true
+										}
+									]
+								},
+								"description": "List siswa yang belum lunas (Invoice status != PAID). \nOutput biasanya untuk dicetak/Excel."
+							},
+							"response": [
+								{
+									"name": "Success Arrears",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/reports/arrears?class_id={{saved_class_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"reports",
+												"arrears"
+											],
+											"query": [
+												{
+													"key": "class_id",
+													"value": "{{saved_class_id}}",
+													"description": "Filter per kelas"
+												},
+												{
+													"key": "academic_year_id",
+													"value": "{{active_academic_year_id}}",
+													"description": "Filter tahun ajaran",
+													"disabled": true
+												}
+											]
+										},
+										"description": "List siswa yang belum lunas (Invoice status != PAID). \nOutput biasanya untuk dicetak/Excel."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Arrears report fetched\"\n    },\n    \"data\": [\n        {\n            \"student_name\": \"Budi Santoso\",\n            \"class\": \"X-IPA-1\",\n            \"total_debt\": 450000,\n            \"details\": [\n                \"SPP Februari (Sisa 200rb)\",\n                \"Uang Gedung (Sisa 250rb)\"\n            ]\n        },\n        {\n            \"student_name\": \"Ani\",\n            \"class\": \"X-IPA-1\",\n            \"total_debt\": 100000,\n            \"details\": [\n                \"SPP Februari (Sisa 100rb)\"\n            ]\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "2. Laporan Pendapatan (Income)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/reports/income?start_date=2024-02-01&end_date=2024-02-29",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"reports",
+										"income"
+									],
+									"query": [
+										{
+											"key": "start_date",
+											"value": "2024-02-01",
+											"description": "Tanggal Awal"
+										},
+										{
+											"key": "end_date",
+											"value": "2024-02-29",
+											"description": "Tanggal Akhir"
+										}
+									]
+								},
+								"description": "Rekap uang masuk real (Berdasarkan tabel Payments). \nBisa dikelompokkan per kategori pembayaran (Cash/Transfer)."
+							},
+							"response": [
+								{
+									"name": "Success Income",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/reports/income?start_date=2024-02-01&end_date=2024-02-29",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"reports",
+												"income"
+											],
+											"query": [
+												{
+													"key": "start_date",
+													"value": "2024-02-01",
+													"description": "Tanggal Awal"
+												},
+												{
+													"key": "end_date",
+													"value": "2024-02-29",
+													"description": "Tanggal Akhir"
+												}
+											]
+										},
+										"description": "Rekap uang masuk real (Berdasarkan tabel Payments). \nBisa dikelompokkan per kategori pembayaran (Cash/Transfer)."
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "Text",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Income report fetched\"\n    },\n    \"data\": {\n        \"period\": \"01 Feb 2024 - 29 Feb 2024\",\n        \"total_income\": 50000000,\n        \"breakdown_by_method\": {\n            \"CASH\": 15000000,\n            \"TRANSFER\": 35000000\n        },\n        \"daily_income\": [\n            {\n                \"date\": \"2024-02-01\",\n                \"amount\": 2500000\n            },\n             {\n                \"date\": \"2024-02-02\",\n                \"amount\": 1000000\n            }\n        ]\n    }\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{admin_token}}",
+						"type": "string"
+					}
+				]
+			}
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": ""
+		},
+		{
+			"key": "base_token",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "admin_token",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
