@@ -130,7 +130,7 @@ class StudentController extends Controller
             'search' => 'required|string|max:255',
             'academic_year_id' => 'nullable|exists:academic_years,id',
             'year' => ['nullable', 'string', 'regex:/^\d{4}(-|\/)\d{4}$|^\d{4}$/'],
-            'level' => 'nullable|string|max:50',
+            'level' => 'nullable|integer|min:1|max:6',
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
@@ -232,7 +232,7 @@ class StudentController extends Controller
                 // year: 2024, 2024-2025, atau 2024/2025
                 'year' => ['nullable', 'string', 'regex:/^\d{4}(-|\/)\d{4}$|^\d{4}$/'],
                 'class_id' => 'nullable|exists:classes,id',
-                'level' => 'nullable|string|max:50',
+                'level' => 'nullable|integer|min:1|max:6',
                 'status' => 'nullable|in:active,inactive,graduated,dropped',
                 'search' => 'nullable|string|max:255',
                 'sort_by' => 'nullable|in:full_name,nis,status,created_at',

@@ -149,7 +149,7 @@ class AuthenticationTest extends TestCase
         // Create class
         $class = Classes::create([
             'name' => 'Kelas 1',
-            'level' => '1',
+            'level' => 1,
         ]);
 
         // Add student to class using StudentClassHistory model
