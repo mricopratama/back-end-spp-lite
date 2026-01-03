@@ -67,14 +67,14 @@ class StudentController extends Controller
                 });
             }
 
-            // Enhanced search: name, NIS, address, phone
+            // Enhanced search: name, NIS, address, phone (case-insensitive)
             if ($request->has('search')) {
-                $search = $request->search;
+                $search = strtolower($request->search);
                 $query->where(function ($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                      ->orWhere('nis', 'like', "%{$search}%")
-                      ->orWhere('address', 'like', "%{$search}%")
-                      ->orWhere('phone_number', 'like', "%{$search}%");
+                    $q->whereRaw('LOWER(full_name) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(nis) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(address) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(phone_number) LIKE ?', ["%{$search}%"]);
                 });
             }
 
@@ -114,95 +114,6 @@ class StudentController extends Controller
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch students: ' . $e->getMessage(), 500);
         }
-    }
-
-        /**
-     * Search students by name or NIS with academic year validation
-     * Endpoint: /api/students/search
-     * Query params:
-     *   - search: string (name or NIS, required)
-     *   - academic_year_id: int (optional, default: active year)
-     *   - per_page: int (optional, default: 15)
-     */
-    public function search(Request $request)
-    {
-        $request->validate([
-            'search' => 'required|string|max:255',
-            'academic_year_id' => 'nullable|exists:academic_years,id',
-            'year' => ['nullable', 'string', 'regex:/^\d{4}(-|\/)\d{4}$|^\d{4}$/'],
-            'level' => 'nullable|integer|min:1|max:6',
-            'per_page' => 'nullable|integer|min:1|max:100',
-        ]);
-
-        $search = $request->search;
-        $academicYearId = $request->academic_year_id;
-        $yearParam = $request->year;
-        $level = $request->level;
-
-        $query = Student::query();
-
-        // Gabungkan filter academic_year_id/year dan level dalam satu whereHas agar filter level hanya berlaku pada class history tahun ajaran yang dicari
-        $filterByAcademicYear = null;
-        if ($academicYearId) {
-            $filterByAcademicYear = function ($q) use ($academicYearId) {
-                $q->where('academic_year_id', $academicYearId);
-            };
-        } elseif ($yearParam) {
-            if (strpos($yearParam, '-') !== false) {
-                $academicYearPattern = str_replace('-', '/', $yearParam);
-                $filterByAcademicYear = function ($q) use ($academicYearPattern) {
-                    $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
-                        $qa->where('name', $academicYearPattern);
-                    });
-                };
-            } elseif (strpos($yearParam, '/') !== false) {
-                $academicYearPattern = $yearParam;
-                $filterByAcademicYear = function ($q) use ($academicYearPattern) {
-                    $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
-                        $qa->where('name', $academicYearPattern);
-                    });
-                };
-            } else {
-                $academicYearPattern = $yearParam . '/%';
-                $filterByAcademicYear = function ($q) use ($academicYearPattern) {
-                    $q->whereHas('academicYear', function ($qa) use ($academicYearPattern) {
-                        $qa->where('name', 'like', $academicYearPattern);
-                    });
-                };
-            }
-        } else {
-            $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
-            if (!$activeYear) {
-                return ApiResponse::error('Tidak ada tahun ajar aktif', 422);
-            }
-            $academicYearId = $activeYear->id;
-            $filterByAcademicYear = function ($q) use ($academicYearId) {
-                $q->where('academic_year_id', $academicYearId);
-            };
-        }
-
-        if ($level || $filterByAcademicYear) {
-            $query->whereHas('classHistory', function ($q) use ($level, $filterByAcademicYear) {
-                if ($filterByAcademicYear) {
-                    $filterByAcademicYear($q);
-                }
-                if ($level) {
-                    $q->whereHas('class', function ($qc) use ($level) {
-                        $qc->where('level', $level);
-                    });
-                }
-            });
-        }
-
-        $query->where(function ($q) use ($search) {
-            $q->where('full_name', 'like', "%{$search}%")
-              ->orWhere('nis', 'like', "%{$search}%");
-        });
-
-        $perPage = $request->get('per_page', 15);
-        $students = $query->paginate($perPage);
-
-        return ApiResponse::success($students, 'Search result');
     }
 
     /**
@@ -308,14 +219,14 @@ class StudentController extends Controller
                 $query->where('status', $request->status);
             }
 
-            // Search functionality
+            // Search functionality (case-insensitive)
             if ($request->has('search')) {
-                $search = $request->search;
+                $search = strtolower($request->search);
                 $query->where(function ($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                      ->orWhere('nis', 'like', "%{$search}%")
-                      ->orWhere('address', 'like', "%{$search}%")
-                      ->orWhere('phone_number', 'like', "%{$search}%");
+                    $q->whereRaw('LOWER(full_name) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(nis) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(address) LIKE ?', ["%{$search}%"])
+                      ->orWhereRaw('LOWER(phone_number) LIKE ?', ["%{$search}%"]);
                 });
             }
 
@@ -433,7 +344,22 @@ class StudentController extends Controller
         try {
             DB::beginTransaction();
 
-            $student = Student::create($request->validated());
+            // Create student
+            $studentData = $request->validated();
+            $classId = $studentData['class_id'];
+            $academicYearId = $studentData['academic_year_id'];
+
+            // Remove class_id and academic_year_id from student data
+            unset($studentData['class_id'], $studentData['academic_year_id']);
+
+            $student = Student::create($studentData);
+
+            // Assign class to student
+            StudentClassHistory::create([
+                'student_id' => $student->id,
+                'class_id' => $classId,
+                'academic_year_id' => $academicYearId,
+            ]);
 
             DB::commit();
 

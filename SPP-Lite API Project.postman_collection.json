@@ -1255,7 +1255,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"nis\": \"2024004\",\n    \"full_name\": \"Dino\",\n    \"address\": \"Jl. Sudirman No. 10\",\n    \"phone_number\": \"08123456789\",\n    \"status\": \"active\"\n}",
+									"raw": "{\n    \"nis\": \"2024004\",\n    \"full_name\": \"Dino\",\n    \"address\": \"Jl. Sudirman No. 10\",\n    \"phone_number\": \"08123456789\",\n    \"status\": \"active\",\n    \"class_id\": {{saved_class_id}},\n    \"academic_year_id\": {{active_academic_year_id}}\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1483,7 +1483,7 @@
 							]
 						},
 						{
-							"name": "(Pagination) Student with academicYear",
+							"name": "(Pagination & Search) Students with Filters",
 							"protocolProfileBehavior": {
 								"disableBodyPruning": true
 							},
@@ -1495,7 +1495,7 @@
 									"raw": ""
 								},
 								"url": {
-									"raw": "{{base_url}}/students/paginate?per_page={{per_page}}&page={{pages}}&year={{year}}&level=4",
+									"raw": "{{base_url}}/students/paginate?per_page={{per_page}}&page={{pages}}&year={{year}}&level=4&search={{keyword}}",
 									"host": [
 										"{{base_url}}"
 									],
@@ -1506,19 +1506,46 @@
 									"query": [
 										{
 											"key": "per_page",
-											"value": "{{per_page}}"
+											"value": "{{per_page}}",
+											"description": "Items per page (default: 15, max: 100)"
 										},
 										{
 											"key": "page",
-											"value": "{{pages}}"
+											"value": "{{pages}}",
+											"description": "Page number"
 										},
 										{
 											"key": "year",
-											"value": "{{year}}"
+											"value": "{{year}}",
+											"description": "Filter by academic year (format: 2024-2025 or 2024)"
 										},
 										{
 											"key": "level",
-											"value": "4"
+											"value": "4",
+											"description": "Filter by class level (1-6)"
+										},
+										{
+											"key": "search",
+											"value": "{{keyword}}",
+											"description": "Search by name, NIS, address, or phone"
+										},
+										{
+											"key": "status",
+											"value": "active",
+											"disabled": true,
+											"description": "Filter by status (active, inactive, graduated, dropped)"
+										},
+										{
+											"key": "sort_by",
+											"value": "full_name",
+											"disabled": true,
+											"description": "Sort column (full_name, nis, status, created_at)"
+										},
+										{
+											"key": "sort_order",
+											"value": "asc",
+											"disabled": true,
+											"description": "Sort direction (asc, desc)"
 										}
 									]
 								}
@@ -1526,100 +1553,6 @@
 							"response": [
 								{
 									"name": "Success Response",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": ""
-										},
-										"url": {
-											"raw": "{{base_url}}/academic-years?search=2024/2025",
-											"host": [
-												"{{base_url}}"
-											],
-											"path": [
-												"academic-years"
-											],
-											"query": [
-												{
-													"key": "search",
-													"value": "2024/2025"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": null,
-									"header": [
-										{
-											"key": "Host",
-											"value": "localhost:8000"
-										},
-										{
-											"key": "Connection",
-											"value": "close"
-										},
-										{
-											"key": "X-Powered-By",
-											"value": "PHP/8.3.11"
-										},
-										{
-											"key": "Cache-Control",
-											"value": "no-cache, private"
-										},
-										{
-											"key": "Date",
-											"value": "Mon, 22 Dec 2025 13:26:29 GMT"
-										},
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										},
-										{
-											"key": "Access-Control-Allow-Origin",
-											"value": "*"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of academic years\"\n    },\n    \"data\": {\n        \"current_page\": 1,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"name\": \"2024/2025\",\n                \"is_active\": true,\n                \"created_at\": \"2025-12-22T13:16:51.000000Z\",\n                \"updated_at\": \"2025-12-22T13:16:51.000000Z\"\n            }\n        ],\n        \"first_page_url\": \"http://localhost:8000/api/academic-years?page=1\",\n        \"from\": 1,\n        \"last_page\": 1,\n        \"last_page_url\": \"http://localhost:8000/api/academic-years?page=1\",\n        \"links\": [\n            {\n                \"url\": null,\n                \"label\": \"&laquo; Previous\",\n                \"page\": null,\n                \"active\": false\n            },\n            {\n                \"url\": \"http://localhost:8000/api/academic-years?page=1\",\n                \"label\": \"1\",\n                \"page\": 1,\n                \"active\": true\n            },\n            {\n                \"url\": null,\n                \"label\": \"Next &raquo;\",\n                \"page\": null,\n                \"active\": false\n            }\n        ],\n        \"next_page_url\": null,\n        \"path\": \"http://localhost:8000/api/academic-years\",\n        \"per_page\": 15,\n        \"prev_page_url\": null,\n        \"to\": 1,\n        \"total\": 1\n    }\n}"
-								}
-							]
-						},
-						{
-							"name": "Search Param Student",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{base_url}}/students/search?search={{keyword}}&year={{year}}&level=6",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"students",
-										"search"
-									],
-									"query": [
-										{
-											"key": "search",
-											"value": "{{keyword}}"
-										},
-										{
-											"key": "year",
-											"value": "{{year}}"
-										},
-										{
-											"key": "level",
-											"value": "6"
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Success Search",
 									"originalRequest": {
 										"method": "GET",
 										"header": [],

@@ -40,8 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Student routes
     Route::prefix('students')->group(function () {
         Route::get('/', [StudentController::class, 'index']); // List students
-        Route::get('/paginate', [StudentController::class, 'paginate']); // Paginated students with filters
-        Route::get('/search', [StudentController::class, 'search']); // Search students by name/nis & academic year
+        Route::get('/paginate', [StudentController::class, 'paginate']); // Paginated students with filters & search
         Route::post('/', [StudentController::class, 'store'])->middleware('role:admin'); // Create student
         Route::get('/{student}', [StudentController::class, 'show']); // Show student detail
         Route::put('/{student}', [StudentController::class, 'update'])->middleware('role:admin'); // Update student
