@@ -1361,6 +1361,20 @@
 											"description": "Upload file .xlsx / .csv di sini",
 											"type": "file",
 											"src": "/C:/Users/LENOVO/Documents/testimport.xlsx"
+										},
+										{
+											"key": "class_id",
+											"value": "",
+											"description": "(Optional) ID kelas untuk assign semua siswa yang di-import. Jika ada di Excel, Excel diprioritaskan.",
+											"type": "text",
+											"disabled": true
+										},
+										{
+											"key": "academic_year_id",
+											"value": "",
+											"description": "(Optional) ID tahun ajaran untuk assign semua siswa. Jika ada di Excel, Excel diprioritaskan.",
+											"type": "text",
+											"disabled": true
 										}
 									]
 								},
@@ -1374,7 +1388,7 @@
 										"import"
 									]
 								},
-								"description": "Upload file Excel (.xlsx) untuk import data siswa secara massal.\n\n**Fitur Auto-Detect:**\n- Sistem otomatis mendeteksi sheet dan header row\n- Tidak perlu format khusus, cukup ada kolom: NIS, Nama\n- Kolom opsional: Alamat, No HP/Telepon, Status\n\n**Status yang valid:** ACTIVE, GRADUATED, DROPPED_OUT, TRANSFERRED (default: ACTIVE)\n\n**Note:** Untuk set kelas siswa, gunakan endpoint POST /students/set-class setelah import."
+								"description": "Upload file Excel (.xlsx) untuk import data siswa secara massal.\n\n**Fitur Auto-Detect:**\n- Sistem otomatis mendeteksi sheet dan header row\n- Tidak perlu format khusus, cukup ada kolom: NIS, Nama\n- Kolom opsional: Alamat, No HP/Telepon, Status, Kelas, Tahun Ajaran\n\n**Status yang valid:** ACTIVE, GRADUATED, DROPPED_OUT, TRANSFERRED (default: ACTIVE)\n\n**Kolom Kelas & Tahun Ajaran:**\n- Bisa diisi di Excel (kolom: Kelas/Class/Tingkat dan Tahun Ajaran/Academic Year/TA)\n- Atau pakai parameter API: class_id dan academic_year_id\n- Prioritas: Data di Excel > Parameter API > Tanpa kelas\n\n**Note:** Nama kelas dan tahun ajaran di Excel harus sesuai dengan database."
 							},
 							"response": [
 								{
@@ -1415,7 +1429,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Import completed. 48 students inserted, 2 failed.\"\n    },\n    \"data\": {\n        \"total_rows\": 50,\n        \"inserted\": 48,\n        \"failed\": 2,\n        \"errors\": [\n            \"Row 15: NIS 2024015 sudah terdaftar\",\n            \"Row 32: Nama wajib diisi\"\n        ],\n        \"import_info\": {\n            \"sheet_name\": \"Data Siswa\",\n            \"header_row\": 1,\n            \"data_start_row\": 2,\n            \"data_end_row\": 51,\n            \"column_mapping\": {\n                \"nis\": \"A\",\n                \"name\": \"B\",\n                \"address\": \"C\",\n                \"phone\": \"D\",\n                \"status\": \"E\"\n            },\n            \"sample_data\": [\n                \"Row 2: NIS='2024001', Name='Ahmad Fauzi'\",\n                \"Row 3: NIS='2024002', Name='Siti Nurhaliza'\",\n                \"Row 4: NIS='2024003', Name='Budi Santoso'\"\n            ]\n        }\n    }\n}"
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Import completed. 48 students inserted, 2 failed.\"\n    },\n    \"data\": {\n        \"total_rows\": 50,\n        \"inserted\": 48,\n        \"failed\": 2,\n        \"errors\": [\n            \"Row 15: NIS 2024015 sudah terdaftar\",\n            \"Row 32: Nama wajib diisi\"\n        ],\n        \"import_info\": {\n            \"sheet_name\": \"Data Siswa\",\n            \"header_row\": 1,\n            \"data_start_row\": 2,\n            \"data_end_row\": 51,\n            \"column_mapping\": {\n                \"nis\": \"A\",\n                \"name\": \"B\",\n                \"address\": \"C\",\n                \"phone\": \"D\",\n                \"status\": \"E\",\n                \"class\": \"F\",\n                \"academic_year\": \"G\"\n            },\n            \"sample_data\": [\n                \"Row 2: NIS='2024001', Name='Ahmad Fauzi', Class='1.1', Year='2024/2025'\",\n                \"Row 3: NIS='2024002', Name='Siti Nurhaliza', Class='1.2', Year='2024/2025'\",\n                \"Row 4: NIS='2024003', Name='Budi Santoso', Class='2.1', Year='2024/2025'\"\n            ]\n        }\n    }\n}"
 								},
 								{
 									"name": "Success Import",

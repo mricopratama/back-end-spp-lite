@@ -265,7 +265,7 @@ class InvoiceController extends Controller
                     'Tidak dapat menemukan data invoice di file Excel.',
                     400,
                     [
-                        'help' => 'Pastikan ada kolom: NIS, Nama Siswa, Fee Category/Kategori, Jumlah, Jatuh Tempo, Bulan, Tahun Ajaran'
+                        'help' => 'Pastikan ada kolom: NIS, Nama Siswa, Fee Category/Kategori, Jumlah/Amount, Bulan/Month'
                     ]
                 );
             }
@@ -309,10 +309,7 @@ class InvoiceController extends Controller
                     $nis = trim($worksheet->getCell($columnMapping['nis'] . $row)->getValue() ?? '');
                     $feeCategoryName = trim($worksheet->getCell($columnMapping['fee_category'] . $row)->getValue() ?? '');
                     $amount = trim($worksheet->getCell($columnMapping['amount'] . $row)->getValue() ?? '');
-                    $dueDate = $columnMapping['due_date']
-                        ? trim($worksheet->getCell($columnMapping['due_date'] . $row)->getValue() ?? '')
-                        : null;
-                    $month = $columnMapping['month']
+                    $periodMonth = $columnMapping['month']
                         ? trim($worksheet->getCell($columnMapping['month'] . $row)->getValue() ?? '')
                         : null;
 
@@ -340,20 +337,31 @@ class InvoiceController extends Controller
                         continue;
                     }
 
-                    // Parse due date
-                    if (empty($dueDate)) {
-                        $dueDate = now()->addDays(30)->format('Y-m-d');
-                    } else {
-                        // Handle Excel date serial number
-                        if (is_numeric($dueDate)) {
-                            $dueDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($dueDate)->format('Y-m-d');
-                        } else {
-                            try {
-                                $dueDate = date('Y-m-d', strtotime($dueDate));
-                            } catch (\Exception $e) {
-                                $dueDate = now()->addDays(30)->format('Y-m-d');
-                            }
+                    // Parse period month (1-12)
+                    $monthNumber = null;
+                    if (!empty($periodMonth)) {
+                        // Try to convert month name to number
+                        $monthNames = [
+                            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
+                            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
+                            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
+                            'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
+                            'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
+                            'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12,
+                        ];
+
+                        $monthLower = strtolower(trim($periodMonth));
+                        if (isset($monthNames[$monthLower])) {
+                            $monthNumber = $monthNames[$monthLower];
+                        } elseif (is_numeric($periodMonth) && $periodMonth >= 1 && $periodMonth <= 12) {
+                            $monthNumber = (int) $periodMonth;
                         }
+                    }
+
+                    if (!$monthNumber) {
+                        $errors[] = "Row {$row}: Bulan tidak valid (gunakan nama bulan atau angka 1-12)";
+                        $failed++;
+                        continue;
                     }
 
                     // Find student
@@ -372,22 +380,20 @@ class InvoiceController extends Controller
                         continue;
                     }
 
-                    $description = $month ? "{$feeCategoryName} - {$month}" : $feeCategoryName;
-
-                    // Group by student + due date
-                    $key = $student->id . '_' . $dueDate;
+                    // Group by student + month
+                    $key = $student->id . '_' . $monthNumber;
                     if (!isset($groupedData[$key])) {
                         $groupedData[$key] = [
                             'student_id' => $student->id,
                             'student_nis' => $nis,
-                            'due_date' => $dueDate,
+                            'period_month' => $monthNumber,
                             'items' => [],
                         ];
                     }
 
                     $groupedData[$key]['items'][] = [
                         'fee_category_id' => $feeCategory->id,
-                        'description' => $description,
+                        'fee_category_name' => $feeCategoryName,
                         'amount' => (float) $amount,
                     ];
                 } catch (\Exception $e) {
@@ -396,7 +402,7 @@ class InvoiceController extends Controller
                 }
             }
 
-            // Create invoices
+            // Create invoice items
             foreach ($groupedData as $data) {
                 try {
                     $invoiceNumber = $this->generateInvoiceNumber();
@@ -409,8 +415,7 @@ class InvoiceController extends Controller
                             'amount' => $item['amount'],
                             'paid_amount' => 0,
                             'status' => 'unpaid',
-                            'due_date' => $data['due_date'],
-                            'description' => $item['description'],
+                            'period_month' => $data['period_month'],
                         ]);
                     }
 
@@ -499,7 +504,6 @@ class InvoiceController extends Controller
             'class' => null,
             'fee_category' => null,
             'amount' => null,
-            'due_date' => null,
             'month' => null,
             'academic_year' => null,
         ];
@@ -525,19 +529,16 @@ class InvoiceController extends Controller
             if (!$mapping['class'] && preg_match('/\bkelas\b|\bclass\b/', $normalized)) {
                 $mapping['class'] = $columnLetter;
             }
-            if (!$mapping['fee_category'] && preg_match('/\bfee\s*category\b|\bkategori\b|\bcategory\b/', $normalized)) {
+            if (!$mapping['fee_category'] && preg_match('/\bfee\s*category\b|\bkategori\b|\bcategory\b|\bjenis\s*biaya\b/', $normalized)) {
                 $mapping['fee_category'] = $columnLetter;
             }
-            if (!$mapping['amount'] && preg_match('/\bjumlah\b|\bamount\b|\btotal\b|\bnominal\b/', $normalized)) {
+            if (!$mapping['amount'] && preg_match('/\bjumlah\b|\bamount\b|\btotal\b|\bnominal\b|\bbiaya\b/', $normalized)) {
                 $mapping['amount'] = $columnLetter;
             }
-            if (!$mapping['due_date'] && preg_match('/\bjatuh\s*tempo\b|\bdue\s*date\b|\btempo\b/', $normalized)) {
-                $mapping['due_date'] = $columnLetter;
-            }
-            if (!$mapping['month'] && preg_match('/\bbulan\b|\bmonth\b/', $normalized)) {
+            if (!$mapping['month'] && preg_match('/\bbulan\b|\bmonth\b|\bperiode\b|\bperiod\b/', $normalized)) {
                 $mapping['month'] = $columnLetter;
             }
-            if (!$mapping['academic_year'] && preg_match('/\btahun\s*ajaran\b|\bacademic\s*year\b/', $normalized)) {
+            if (!$mapping['academic_year'] && preg_match('/\btahun\s*ajaran\b|\bacademic\s*year\b|\bta\b/', $normalized)) {
                 $mapping['academic_year'] = $columnLetter;
             }
         }

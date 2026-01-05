@@ -19,15 +19,16 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $credentials = $request->validated();
+        try {
+            $credentials = $request->validated();
 
-        // Find user by username
-        $user = User::with('role')->where('username', $credentials['username'])->first();
+            // Find user by username
+            $user = User::with('role')->where('username', $credentials['username'])->first();
 
-        // Validate credentials
-        if (!$user || !password_verify($credentials['password'], $user->password_hash)) {
-            return ApiResponse::error('Invalid credentials', 401);
-        }
+            // Validate credentials - generic error message untuk security
+            if (!$user || !password_verify($credentials['password'], $user->password_hash)) {
+                return ApiResponse::error('Username atau password salah. Silakan periksa kembali kredensial Anda.', 401);
+            }
 
         // Generate Sanctum token
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -41,10 +42,13 @@ class AuthController extends Controller
             'student_id' => $user->student_id,
         ];
 
-        return ApiResponse::success([
-            'token' => $token,
-            'user' => $userData,
-        ], 'Login successful');
+            return ApiResponse::success([
+                'token' => $token,
+                'user' => $userData,
+            ], 'Login successful');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Login gagal: ' . $e->getMessage(), 500);
+        }
     }
 
     /**
@@ -93,10 +97,14 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Revoke current token
-        $request->user()->currentAccessToken()->delete();
+        try {
+            // Revoke all tokens for the user (recommended for security)
+            $request->user()->tokens()->delete();
 
-        return ApiResponse::success(['message' => 'Logged out successfully']);
+            return ApiResponse::success(['message' => 'Logged out successfully']);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Logout failed: ' . $e->getMessage(), 500);
+        }
     }
 
     /**

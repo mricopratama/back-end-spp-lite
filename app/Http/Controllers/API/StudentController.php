@@ -874,6 +874,17 @@ class StudentController extends Controller
             DB::beginTransaction();
 
             $file = $request->file('file');
+            $classId = $request->input('class_id');
+            $academicYearId = $request->input('academic_year_id');
+
+            // Jika tidak ada class_id atau academic_year_id, gunakan yang aktif
+            if (!$academicYearId) {
+                $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+                if (!$activeYear) {
+                    return ApiResponse::error('Tahun ajaran aktif tidak ditemukan. Silakan tentukan academic_year_id atau aktifkan tahun ajaran.', 400);
+                }
+                $academicYearId = $activeYear->id;
+            }
             $spreadsheet = IOFactory::load($file->getPathname());
 
             // Scan all sheets to find student data
@@ -914,6 +925,8 @@ class StudentController extends Controller
                     'address' => $columnMapping['address'] ?: 'Not found',
                     'phone' => $columnMapping['phone'] ?: 'Not found',
                     'status' => $columnMapping['status'] ?: 'Not found',
+                    'class' => $columnMapping['class'] ?: 'Not found',
+                    'academic_year' => $columnMapping['academic_year'] ?: 'Not found',
                 ]
             ];
 
@@ -933,6 +946,14 @@ class StudentController extends Controller
                         ? trim($worksheet->getCell($columnMapping['status'] . $row)->getValue() ?? 'ACTIVE')
                         : 'ACTIVE';
 
+                    // Read class and academic year from Excel (optional)
+                    $excelClassName = $columnMapping['class']
+                        ? trim($worksheet->getCell($columnMapping['class'] . $row)->getValue() ?? '')
+                        : '';
+                    $excelAcademicYear = $columnMapping['academic_year']
+                        ? trim($worksheet->getCell($columnMapping['academic_year'] . $row)->getValue() ?? '')
+                        : '';
+
                     // Skip completely empty rows
                     if (empty($nis) && empty($fullName) && empty($address) && empty($phoneNumber)) {
                         continue;
@@ -940,7 +961,7 @@ class StudentController extends Controller
 
                     // Debug info for first few data rows
                     if (count($debugInfo['sample_data'] ?? []) < 3) {
-                        $debugInfo['sample_data'][] = "Row {$row}: NIS='{$nis}', Name='{$fullName}'";
+                        $debugInfo['sample_data'][] = "Row {$row}: NIS='{$nis}', Name='{$fullName}', Class='{$excelClassName}', Year='{$excelAcademicYear}'";
                     }
 
                     // Validate required fields
@@ -970,13 +991,43 @@ class StudentController extends Controller
                     }
 
                     // Create student
-                    Student::create([
+                    $student = Student::create([
                         'nis' => $nis,
                         'full_name' => $fullName,
                         'address' => $address ?: null,
                         'phone_number' => $phoneNumber ?: null,
                         'status' => $status,
                     ]);
+
+                    // Determine class and academic year (priority: Excel > Parameter)
+                    $finalClassId = $classId;
+                    $finalAcademicYearId = $academicYearId;
+
+                    // If class name in Excel, try to find by name
+                    if (!empty($excelClassName)) {
+                        $classFromExcel = Classes::where('name', $excelClassName)->first();
+                        if ($classFromExcel) {
+                            $finalClassId = $classFromExcel->id;
+                        }
+                    }
+
+                    // If academic year in Excel, try to find by name
+                    if (!empty($excelAcademicYear)) {
+                        $yearFromExcel = \App\Models\AcademicYear::where('name', $excelAcademicYear)->first();
+                        if ($yearFromExcel) {
+                            $finalAcademicYearId = $yearFromExcel->id;
+                        }
+                    }
+
+                    // Assign class to student if class_id is available
+                    if ($finalClassId && $finalAcademicYearId) {
+                        StudentClassHistory::create([
+                            'student_id' => $student->id,
+                            'class_id' => $finalClassId,
+                            'academic_year_id' => $finalAcademicYearId,
+                        ]);
+                    }
+
 
                     $inserted++;
                 } catch (\Exception $e) {
@@ -996,6 +1047,16 @@ class StudentController extends Controller
 
             // Add debug info
             $response['import_info'] = $debugInfo;
+
+            // Add class info if provided
+            if ($classId) {
+                $class = Classes::find($classId);
+                $response['import_info']['assigned_class'] = $class ? $class->name : null;
+            }
+            if ($academicYearId) {
+                $academicYear = \App\Models\AcademicYear::find($academicYearId);
+                $response['import_info']['academic_year'] = $academicYear ? $academicYear->name : null;
+            }
 
             return ApiResponse::success(
                 $response,
@@ -1087,6 +1148,8 @@ class StudentController extends Controller
             'address' => null,
             'phone' => null,
             'status' => null,
+            'class' => null,
+            'academic_year' => null,
         ];
 
         for ($col = 1; $col <= $maxCol; $col++) {
@@ -1118,6 +1181,12 @@ class StudentController extends Controller
             }
             if (!$mapping['status'] && preg_match('/\b(status|state|kondisi)\b/', $normalized)) {
                 $mapping['status'] = $columnLetter;
+            }
+            if (!$mapping['class'] && preg_match('/\b(kelas|class|tingkat)\b/', $normalized)) {
+                $mapping['class'] = $columnLetter;
+            }
+            if (!$mapping['academic_year'] && preg_match('/\b(tahun\s*ajaran|academic\s*year|tahun\s*akademik|ta)\b/', $normalized)) {
+                $mapping['academic_year'] = $columnLetter;
             }
         }
 

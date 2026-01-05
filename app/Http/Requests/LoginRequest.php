@@ -22,8 +22,21 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'username' => 'required|string',
-            'password' => 'required|string',
+            'username' => 'required|string|min:3|max:255',
+            'password' => 'required|string|min:6',
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'username.required' => 'Username wajib diisi',
+            'username.min' => 'Username minimal 3 karakter',
+            'password.required' => 'Password wajib diisi',
+            'password.min' => 'Password minimal 6 karakter',
         ];
     }
 }

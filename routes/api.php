@@ -12,8 +12,15 @@ use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\ReportController;
 
-// Test endpoint
-Route::get('/ping', [App\Http\Controllers\Api\TestController::class, 'ping']);
+// Public routes (no auth required)
+// Test endpoint - untuk mengecek apakah API server berjalan
+Route::get('/ping', function() {
+    return response()->json([
+        'success' => true,
+        'message' => 'API is running',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
 
 // Public routes (no auth)
 Route::prefix('auth')->group(function () {
@@ -21,7 +28,7 @@ Route::prefix('auth')->group(function () {
 });
 
 // Protected routes (require auth:sanctum)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth.token'])->group(function () {
 
     // Auth routes
     Route::prefix('auth')->group(function () {
