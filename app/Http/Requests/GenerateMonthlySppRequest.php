@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class GenerateMonthlySppRequest extends FormRequest
 {
@@ -36,5 +38,19 @@ class GenerateMonthlySppRequest extends FormRequest
             'due_date.required' => 'Tanggal jatuh tempo harus diisi',
             'due_date.date' => 'Format tanggal tidak valid',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 400)
+        );
     }
 }

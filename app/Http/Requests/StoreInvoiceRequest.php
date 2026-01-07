@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreInvoiceRequest extends FormRequest
 {
@@ -48,5 +50,19 @@ class StoreInvoiceRequest extends FormRequest
             'period_month.min' => 'Bulan periode minimal 1 (Januari)',
             'period_month.max' => 'Bulan periode maksimal 12 (Desember)',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 400)
+        );
     }
 }

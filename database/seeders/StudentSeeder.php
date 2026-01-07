@@ -58,7 +58,7 @@ class StudentSeeder extends Seeder
                 'address' => 'Alamat alumni',
                 'phone_number' => '081200000000',
                 'status' => 'graduated',
-                'kelas' => 'Kelas 6.1',
+                'kelas' => '6.1',
             ];
         }
 
@@ -102,7 +102,7 @@ class StudentSeeder extends Seeder
                 'address' => 'Alamat alumni',
                 'phone_number' => '081200000000',
                 'status' => 'graduated',
-                'kelas' => 'Kelas 6.2',
+                'kelas' => '6.2',
             ];
         }
 
@@ -150,7 +150,7 @@ class StudentSeeder extends Seeder
                 'address' => 'Alamat alumni',
                 'phone_number' => '081200000000',
                 'status' => 'graduated',
-                'kelas' => 'Kelas 6.1',
+                'kelas' => '6.1',
             ];
         }
 
@@ -196,7 +196,7 @@ class StudentSeeder extends Seeder
                 'address' => 'Alamat alumni',
                 'phone_number' => '081200000000',
                 'status' => 'graduated',
-                'kelas' => 'Kelas 6.2',
+                'kelas' => '6.2',
             ];
         }
 
@@ -207,18 +207,18 @@ class StudentSeeder extends Seeder
         }
 
         // Get Kelas 6.1, 6.2, 5.1, 5.2, 4.1, 4.2, 3.1, 3.2, 2.1, 2.2, 1.1, 1.2
-        $kelas61 = Classes::where('name', 'Kelas 6.1')->first();
-        $kelas62 = Classes::where('name', 'Kelas 6.2')->first();
-        $kelas51 = Classes::where('name', 'Kelas 5.1')->first();
-        $kelas52 = Classes::where('name', 'Kelas 5.2')->first();
-        $kelas41 = Classes::where('name', 'Kelas 4.1')->first();
-        $kelas42 = Classes::where('name', 'Kelas 4.2')->first();
-        $kelas31 = Classes::where('name', 'Kelas 3.1')->first();
-        $kelas32 = Classes::where('name', 'Kelas 3.2')->first();
-        $kelas21 = Classes::where('name', 'Kelas 2.1')->first();
-        $kelas22 = Classes::where('name', 'Kelas 2.2')->first();
-        $kelas11 = Classes::where('name', 'Kelas 1.1')->first();
-        $kelas12 = Classes::where('name', 'Kelas 1.2')->first();
+        $kelas61 = Classes::where('name', '6.1')->first();
+        $kelas62 = Classes::where('name', '6.2')->first();
+        $kelas51 = Classes::where('name', '5.1')->first();
+        $kelas52 = Classes::where('name', '5.2')->first();
+        $kelas41 = Classes::where('name', '4.1')->first();
+        $kelas42 = Classes::where('name', '4.2')->first();
+        $kelas31 = Classes::where('name', '3.1')->first();
+        $kelas32 = Classes::where('name', '3.2')->first();
+        $kelas21 = Classes::where('name', '2.1')->first();
+        $kelas22 = Classes::where('name', '2.2')->first();
+        $kelas11 = Classes::where('name', '1.1')->first();
+        $kelas12 = Classes::where('name', '1.2')->first();
 
         // Data siswa kelas 6.1
         $students61 = [

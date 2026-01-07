@@ -27,18 +27,18 @@ class MasterDataSeeder extends Seeder
 
         // Seed Classes (SD Level 1-6)
         $classes = [
-            ['name' => 'Kelas 1.1', 'level' => 1],
-            ['name' => 'Kelas 1.2', 'level' => 1],
-            ['name' => 'Kelas 2.1', 'level' => 2],
-            ['name' => 'Kelas 2.2', 'level' => 2],
-            ['name' => 'Kelas 3.1', 'level' => 3],
-            ['name' => 'Kelas 3.2', 'level' => 3],
-            ['name' => 'Kelas 4.1', 'level' => 4],
-            ['name' => 'Kelas 4.2', 'level' => 4],
-            ['name' => 'Kelas 5.1', 'level' => 5],
-            ['name' => 'Kelas 5.2', 'level' => 5],
-            ['name' => 'Kelas 6.1', 'level' => 6],
-            ['name' => 'Kelas 6.2', 'level' => 6],
+            ['name' => '1.1', 'level' => 1],
+            ['name' => '1.2', 'level' => 1],
+            ['name' => '2.1', 'level' => 2],
+            ['name' => '2.2', 'level' => 2],
+            ['name' => '3.1', 'level' => 3],
+            ['name' => '3.2', 'level' => 3],
+            ['name' => '4.1', 'level' => 4],
+            ['name' => '4.2', 'level' => 4],
+            ['name' => '5.1', 'level' => 5],
+            ['name' => '5.2', 'level' => 5],
+            ['name' => '6.1', 'level' => 6],
+            ['name' => '6.2', 'level' => 6],
         ];
 
         foreach ($classes as $class) {

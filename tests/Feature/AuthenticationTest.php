@@ -148,7 +148,7 @@ class AuthenticationTest extends TestCase
 
         // Create class
         $class = Classes::create([
-            'name' => 'Kelas 1',
+            'name' => '1.1',
             'level' => 1,
         ]);
 
@@ -192,8 +192,8 @@ class AuthenticationTest extends TestCase
                     'role' => 'student',
                     'student_detail' => [
                         'nis' => '1001',
-                        'class_name' => 'Kelas 1',
-                        'status' => 'ACTIVE',
+                        'class_name' => '1.1',
+                        'status' => 'active',
                     ],
                 ],
             ]);

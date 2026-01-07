@@ -36,7 +36,7 @@ class DashboardController extends Controller
                 ->sum('amount');
 
             // Active students count
-            $activeStudentsCount = Student::where('status', 'ACTIVE')->count();
+            $activeStudentsCount = Student::where('status', 'active')->count();
 
             // Paid invoice percentage
             $totalInvoices = InvoiceItem::count();

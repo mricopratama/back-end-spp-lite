@@ -40,8 +40,8 @@ class ClassTest extends TestCase
 
     public function test_can_list_classes()
     {
-        Classes::create(['name' => 'Kelas 1', 'level' => 1]);
-        Classes::create(['name' => 'Kelas 2', 'level' => 2]);
+        Classes::create(['name' => '1.1', 'level' => 1]);
+        Classes::create(['name' => '2.1', 'level' => 2]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
@@ -56,12 +56,11 @@ class ClassTest extends TestCase
             ]);
     }
 
-    public function test_can_create_class()
+    public function test_can_create_class_with_auto_generate_name()
     {
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
         ])->postJson('/api/classes', [
-            'name' => 'Kelas 1',
             'level' => 1,
         ]);
 
@@ -72,32 +71,70 @@ class ClassTest extends TestCase
                     'status' => 'success',
                 ],
                 'data' => [
-                    'name' => 'Kelas 1',
+                    'name' => '1.1',
                     'level' => 1,
                 ],
             ]);
 
         $this->assertDatabaseHas('classes', [
-            'name' => 'Kelas 1',
+            'name' => '1.1',
             'level' => 1,
         ]);
     }
 
+    public function test_auto_generate_increments_correctly()
+    {
+        // Create first class
+        Classes::create(['name' => '1.1', 'level' => 1]);
+        Classes::create(['name' => '1.2', 'level' => 1]);
+
+        // Create new class with same level
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->adminToken,
+        ])->postJson('/api/classes', [
+            'level' => 1,
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'data' => [
+                    'name' => '1.3',
+                    'level' => 1,
+                ],
+            ]);
+    }
+
+    public function test_cannot_create_class_with_name_field()
+    {
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->adminToken,
+        ])->postJson('/api/classes', [
+            'name' => '1.1',
+            'level' => 1,
+        ]);
+
+        $response->assertStatus(400)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation error',
+            ]);
+    }
+
     public function test_can_update_class()
     {
-        $class = Classes::create(['name' => 'Kelas 1', 'level' => 1]);
+        $class = Classes::create(['name' => '1.1', 'level' => 1]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
         ])->putJson('/api/classes/' . $class->id, [
-            'name' => 'Kelas 1 Updated',
+            'name' => '1.A',
             'level' => 1,
         ]);
 
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'name' => 'Kelas 1 Updated',
+                    'name' => '1.A',
                     'level' => 1,
                 ],
             ]);
@@ -105,7 +142,7 @@ class ClassTest extends TestCase
 
     public function test_can_delete_class()
     {
-        $class = Classes::create(['name' => 'Kelas 1', 'level' => 1]);
+        $class = Classes::create(['name' => '1.1', 'level' => 1]);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
@@ -120,11 +157,10 @@ class ClassTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
         ])->postJson('/api/classes', [
-            'name' => 'Kelas 7',
             'level' => 7,
         ]);
 
-        $response->assertStatus(422);
+        $response->assertStatus(400);
     }
 
     public function test_validation_fails_with_missing_fields()
@@ -133,6 +169,6 @@ class ClassTest extends TestCase
             'Authorization' => 'Bearer ' . $this->adminToken,
         ])->postJson('/api/classes', []);
 
-        $response->assertStatus(422);
+        $response->assertStatus(400);
     }
 }

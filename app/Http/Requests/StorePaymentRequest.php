@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StorePaymentRequest extends FormRequest
 {
@@ -47,5 +49,19 @@ class StorePaymentRequest extends FormRequest
             'payment_method.in' => 'Metode pembayaran harus CASH atau TRANSFER',
             'notes.max' => 'Catatan maksimal 500 karakter',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 400)
+        );
     }
 }

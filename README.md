@@ -56,10 +56,11 @@
 
 ### 🎓 **Academic Management**
 - [x] Manajemen tahun ajaran (Academic Year)
-- [x] Manajemen kelas (Classes)
+- [x] Manajemen kelas (Classes) dengan auto-generate nama
 - [x] Manajemen siswa (Students)
 - [x] Riwayat kelas siswa per tahun ajaran
 - [x] Filter dan pencarian dengan pagination
+- [x] Format nama kelas: "X.Y" (tanpa prefix "Kelas")
 
 ### 💰 **Fee & Invoice Management**
 - [x] Kategori biaya (Fee Categories)
@@ -103,6 +104,12 @@
 - [x] Custom sorting
 - [x] Flexible pagination
 - [x] Multi-column search
+
+### ✨ **New Features & Improvements**
+- [x] **Auto-generate Class Name**: Saat membuat kelas, hanya perlu input `level`, nama akan otomatis di-generate (contoh: 1.1, 1.2, 1.3, dst)
+- [x] **Standardized Error Response**: Semua validation error mengembalikan HTTP 400 Bad Request dengan format JSON yang konsisten
+- [x] **Simplified Class Format**: Format nama kelas diperbarui dari "Kelas X.Y" menjadi "X.Y" untuk kemudahan
+- [x] **Enhanced Validation**: Validasi ditingkatkan dengan custom error messages yang informatif
 
 ---
 
@@ -316,10 +323,12 @@ http://127.0.0.1:8000/api
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | GET | `/classes` | List classes | Yes | All |
-| POST | `/classes` | Create class | Yes | Admin |
+| POST | `/classes` | Create class (auto-generate name) | Yes | Admin |
 | GET | `/classes/{id}` | Get class | Yes | All |
 | PUT | `/classes/{id}` | Update class | Yes | Admin |
 | DELETE | `/classes/{id}` | Delete class | Yes | Admin |
+
+**Note:** When creating a class, only `level` is required. The `name` will be auto-generated based on existing classes with the same level (e.g., if level 1 already has "1.1" and "1.2", the next will be "1.3").
 
 ### **Students**
 | Method | Endpoint | Description | Auth | Role |
@@ -416,6 +425,61 @@ Authorization: Bearer 1|AbCdEfGhIjKlMnOpQrStUvWxYz...
 ```bash
 POST /api/logout
 Authorization: Bearer 1|AbCdEfGhIjKlMnOpQrStUvWxYz...
+```
+
+---
+
+## 📖 API Usage Examples
+
+### **Create Class (Auto-Generate Name)**
+```bash
+POST /api/classes
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "level": 1
+}
+
+Response (201 Created):
+{
+  "success": true,
+  "message": "Class created successfully",
+  "data": {
+    "id": 1,
+    "name": "1.1",
+    "level": 1,
+    "created_at": "2026-01-07T00:00:00.000000Z"
+  }
+}
+```
+
+**Note:** Nama kelas akan otomatis di-generate berdasarkan level. Jika sudah ada kelas dengan nama "1.1" dan "1.2", maka kelas baru akan diberi nama "1.3".
+
+### **Update Class**
+```bash
+PUT /api/classes/1
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "name": "1.A",
+  "level": 1
+}
+```
+
+### **Validation Error Response (400 Bad Request)**
+Jika terjadi validation error, API akan mengembalikan:
+
+```json
+{
+  "success": false,
+  "message": "Validation error",
+  "errors": {
+    "name": ["The name field is prohibited."],
+    "level": ["The level field is required."]
+  }
+}
 ```
 
 ---
@@ -558,7 +622,7 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 ## 📞 Support
 
 Untuk pertanyaan atau dukungan:
-- 📧 Email: support@spp-lite.com
+- 📧 Email: mricopratama13@gmail.com
 - 📖 Documentation: [Link to docs]
 - 🐛 Issue Tracker: [GitHub Issues]
 

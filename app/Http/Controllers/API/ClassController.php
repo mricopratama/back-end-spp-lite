@@ -24,6 +24,26 @@ class ClassController extends Controller
     public function store(ClassRequest $request)
     {
         $validated = $request->validated();
+
+        // Auto-generate name based on level
+        $level = $validated['level'];
+
+        // Get the last class with the same level
+        $lastClass = Classes::where('level', $level)
+            ->where('name', 'like', $level . '.%')
+            ->orderByRaw('CAST(SUBSTRING_INDEX(name, ".", -1) AS UNSIGNED) DESC')
+            ->first();
+
+        if ($lastClass) {
+            // Extract the number after the dot and increment
+            $parts = explode('.', $lastClass->name);
+            $lastNumber = intval(end($parts));
+            $validated['name'] = $level . '.' . ($lastNumber + 1);
+        } else {
+            // First class for this level
+            $validated['name'] = $level . '.1';
+        }
+
         $class = Classes::create($validated);
 
         return ApiResponse::success($class, 'Class created successfully', 201);

@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class SetStudentClassRequest extends FormRequest
 {
@@ -41,5 +43,19 @@ class SetStudentClassRequest extends FormRequest
             'academic_year_id.required' => 'Academic Year ID wajib diisi',
             'academic_year_id.exists' => 'Tahun ajaran tidak ditemukan',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 400)
+        );
     }
 }

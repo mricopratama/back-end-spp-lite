@@ -417,7 +417,7 @@ class StudentController extends Controller
                 $classHistory = $student->classHistories()->where('academic_year_id', $activeYear->id)->first();
                 if ($student->status !== 'active') {
                     DB::rollBack();
-                    return ApiResponse::error('Hanya siswa dengan status ACTIVE di tahun ajaran aktif yang bisa diedit.', 403);
+                    return ApiResponse::error('Hanya siswa dengan status active di tahun ajaran aktif yang bisa diedit.', 403);
                 }
             }
 
@@ -448,7 +448,7 @@ class StudentController extends Controller
             // Check if student has invoice items
             if ($student->invoice_items()->exists()) {
                 return ApiResponse::error(
-                    'Cannot delete student with existing invoice items. Set status to INACTIVE instead.',
+                    'Cannot delete student with existing invoice items. Set status to INactive instead.',
                     400
                 );
             }
@@ -526,7 +526,7 @@ class StudentController extends Controller
             $fromYearId = $request->from_academic_year_id;
             $toYearId = $request->to_academic_year_id;
 
-            // Get all ACTIVE students in the source academic year
+            // Get all active students in the source academic year
             $studentHistories = StudentClassHistory::with(['student', 'class'])
                 ->where('academic_year_id', $fromYearId)
                 ->whereHas('student', function($q) {
@@ -636,7 +636,7 @@ class StudentController extends Controller
                 'failed' => []
             ];
 
-            // Get all ACTIVE students in the source academic year
+            // Get all active students in the source academic year
             $studentHistories = StudentClassHistory::with(['student', 'class'])
                 ->where('academic_year_id', $fromYearId)
                 ->whereHas('student', function($q) {
@@ -943,8 +943,8 @@ class StudentController extends Controller
                         ? trim($worksheet->getCell($columnMapping['phone'] . $row)->getValue() ?? '')
                         : '';
                     $status = $columnMapping['status']
-                        ? trim($worksheet->getCell($columnMapping['status'] . $row)->getValue() ?? 'ACTIVE')
-                        : 'ACTIVE';
+                        ? trim($worksheet->getCell($columnMapping['status'] . $row)->getValue() ?? 'active')
+                        : 'active';
 
                     // Read class and academic year from Excel (optional)
                     $excelClassName = $columnMapping['class']
@@ -986,8 +986,8 @@ class StudentController extends Controller
 
                     // Normalize status
                     $status = strtoupper($status);
-                    if (!in_array($status, ['ACTIVE', 'GRADUATED', 'DROPPED_OUT', 'TRANSFERRED'])) {
-                        $status = 'ACTIVE';
+                    if (!in_array($status, ['active', 'GRADUATED', 'DROPPED_OUT', 'TRANSFERRED'])) {
+                        $status = 'active';
                     }
 
                     // Create student

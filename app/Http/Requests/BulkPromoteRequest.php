@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class BulkPromoteRequest extends FormRequest
 {
@@ -42,5 +44,19 @@ class BulkPromoteRequest extends FormRequest
             'class_mapping.*.from_class_id.required' => 'Kelas asal wajib diisi',
             'class_mapping.*.to_class_id.required' => 'Kelas tujuan wajib diisi',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 400)
+        );
     }
 }

@@ -11,7 +11,7 @@ Sistem akan **otomatis mendeteksi** kolom-kolom berikut di Excel Anda:
 ### Kolom Opsional (Optional):
 3. **Alamat** / Address
 4. **No HP** / Phone / Telepon / Contact
-5. **Status** / State (ACTIVE, GRADUATED, DROPPED_OUT, TRANSFERRED)
+5. **Status** / State (active, GRADUATED, DROPPED_OUT, TRANSFERRED)
 6. **Kelas** / Class / Tingkat ⭐ **BARU!**
 7. **Tahun Ajaran** / Academic Year / TA ⭐ **BARU!**
 
@@ -23,10 +23,10 @@ Buat file Excel dengan format berikut:
 
 | NIS    | Nama           | Alamat        | No HP        | Status | Kelas | Tahun Ajaran |
 |--------|----------------|---------------|--------------|--------|-------|--------------|
-| 2024001| Alika Azalea   | Jl. Merdeka 1 | 8123456789   | ACTIVE | 1.1   | 2024/2025    |
-| 2024002| Budi Santoso   | Jl. Sudirman 2| 8123456790   | ACTIVE | 1.2   | 2024/2025    |
-| 2024003| Citra Dewi     | Jl. Gatot 3   | 8123456791   | ACTIVE | 2.1   | 2024/2025    |
-| 2024004| Dani Rahman    | Jl. Ahmad 4   | 8123456792   | ACTIVE | 2.2   | 2024/2025    |
+| 2024001| Alika Azalea   | Jl. Merdeka 1 | 8123456789   | active | 1.1   | 2024/2025    |
+| 2024002| Budi Santoso   | Jl. Sudirman 2| 8123456790   | active | 1.2   | 2024/2025    |
+| 2024003| Citra Dewi     | Jl. Gatot 3   | 8123456791   | active | 2.1   | 2024/2025    |
+| 2024004| Dani Rahman    | Jl. Ahmad 4   | 8123456792   | active | 2.2   | 2024/2025    |
 
 ### 💡 Penjelasan Kolom Kelas & Tahun Ajaran:
 - **Kelas**: Nama kelas sesuai dengan yang ada di database (contoh: 1.1, 1.2, 2.1, dst)
@@ -106,8 +106,8 @@ Sistem **FLEKSIBEL** mendeteksi berbagai nama kolom:
 ```
 | NIS     | Nama          | Alamat      | Telepon     | Status | Kelas | Tahun Ajaran |
 |---------|---------------|-------------|-------------|--------|-------|--------------|
-| 2024001 | Alika Azalea  | Jl. Merdeka | 08123456789 | ACTIVE | 1.1   | 2024/2025    |
-| 2024002 | Budi Santoso  | Jl. Gatot   | 08123456790 | ACTIVE | 1.2   | 2024/2025    |
+| 2024001 | Alika Azalea  | Jl. Merdeka | 08123456789 | active | 1.1   | 2024/2025    |
+| 2024002 | Budi Santoso  | Jl. Gatot   | 08123456790 | active | 1.2   | 2024/2025    |
 ```
 ✅ Import lengkap dengan semua data
 
@@ -207,7 +207,7 @@ Sistem mencari berdasarkan nama:
 ### 5. Validasi Data
 - NIS wajib diisi dan unique
 - Nama wajib diisi
-- Status default = ACTIVE jika tidak diisi
+- Status default = active jika tidak diisi
 - Kelas & Tahun Ajaran opsional
 
 ---
@@ -216,7 +216,7 @@ Sistem mencari berdasarkan nama:
 
 1. **Pastikan NIS Unique**: Jangan ada NIS duplikat di Excel
 2. **Format Kelas & Tahun Ajaran**: Pastikan nama sesuai dengan data di database
-3. **Status Valid**: ACTIVE, GRADUATED, DROPPED_OUT, TRANSFERRED
+3. **Status Valid**: active, GRADUATED, DROPPED_OUT, TRANSFERRED
 4. **Test Import Kecil Dulu**: Import 2-3 data dulu untuk test
 5. **Backup Data**: Sebelum import massal, backup database dulu
 6. **Cek Master Data**: Pastikan kelas dan tahun ajaran sudah ada di database
@@ -249,8 +249,8 @@ Buat file Excel baru dengan struktur ini:
 
 | NIS     | Nama          | Alamat           | No HP        | Status | Kelas | Tahun Ajaran |
 |---------|---------------|------------------|--------------|--------|-------|--------------|
-| 2024001 | Alika Azalea  | Jl. Merdeka 1    | 08123456789  | ACTIVE | 1.1   | 2024/2025    |
-| 2024002 | Budi Santoso  | Jl. Sudirman 2   | 08123456790  | ACTIVE | 1.2   | 2024/2025    |
+| 2024001 | Alika Azalea  | Jl. Merdeka 1    | 08123456789  | active | 1.1   | 2024/2025    |
+| 2024002 | Budi Santoso  | Jl. Sudirman 2   | 08123456790  | active | 1.2   | 2024/2025    |
 
 Simpan sebagai: `template_import_siswa.xlsx`
 
