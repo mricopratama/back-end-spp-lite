@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AcademicYearRequest;
+use App\Http\Requests\UpdateAcademicYearRequest;
 use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +49,7 @@ class AcademicYearController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     * Auto-generate tahun ajaran selanjutnya berdasarkan tahun terakhir.
      */
     public function store(AcademicYearRequest $request)
     {
@@ -55,6 +57,30 @@ class AcademicYearController extends Controller
 
         DB::beginTransaction();
         try {
+            // Auto-generate tahun ajaran selanjutnya
+            $lastYear = AcademicYear::orderBy('name', 'desc')->first();
+
+            if ($lastYear) {
+                // Parse tahun dari format "2025/2026"
+                $parts = explode('/', $lastYear->name);
+                if (count($parts) === 2) {
+                    $nextStartYear = (int)$parts[1];
+                    $nextEndYear = $nextStartYear + 1;
+                    $validated['name'] = $nextStartYear . '/' . $nextEndYear;
+                } else {
+                    return ApiResponse::error('Invalid academic year format', 400);
+                }
+            } else {
+                // Jika belum ada data, mulai dari tahun sekarang
+                $currentYear = date('Y');
+                $validated['name'] = $currentYear . '/' . ($currentYear + 1);
+            }
+
+            // Default is_active = false jika tidak diisi
+            if (!isset($validated['is_active'])) {
+                $validated['is_active'] = false;
+            }
+
             // If is_active is true, set all others to false
             if ($validated['is_active']) {
                 AcademicYear::where('is_active', true)->update(['is_active' => false]);
@@ -87,8 +113,9 @@ class AcademicYearController extends Controller
 
     /**
      * Update the specified resource in storage.
+     * Hanya bisa update is_active, name tidak bisa diubah.
      */
-    public function update(AcademicYearRequest $request, string $id)
+    public function update(UpdateAcademicYearRequest $request, string $id)
     {
         $academicYear = AcademicYear::find($id);
 
@@ -101,13 +128,14 @@ class AcademicYearController extends Controller
         DB::beginTransaction();
         try {
             // If is_active is true, set all others to false
-            if ($validated['is_active']) {
+            if (isset($validated['is_active']) && $validated['is_active']) {
                 AcademicYear::where('id', '!=', $id)
                     ->where('is_active', true)
                     ->update(['is_active' => false]);
             }
 
-            $academicYear->update($validated);
+            // Update hanya is_active, name tidak pernah diupdate
+            $academicYear->update(['is_active' => $validated['is_active']]);
 
             DB::commit();
             return ApiResponse::success($academicYear, 'Academic year updated successfully');

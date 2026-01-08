@@ -726,7 +726,7 @@ class StudentSeeder extends Seeder
             for ($i = 1; $i <= $kelasAkhirLevel; $i++) {
                 $tahun = $tahunMasuk + ($i - 1);
                 $academicYearObj = AcademicYear::where('name', $tahun . '/' . ($tahun + 1))->first();
-                $kelasNama = 'Kelas ' . $i . '.' . $kelasSuffix;
+                $kelasNama = $i . '.' . $kelasSuffix;
                 $kelasObj = Classes::where('name', $kelasNama)->first();
                 if ($kelasObj && $academicYearObj) {
                     StudentClassHistory::create([
@@ -738,6 +738,6 @@ class StudentSeeder extends Seeder
             }
         }
 
-        $this->command->info('Created ' . count($allStudents) . ' students for Kelas 6.1, 6.2, 5.1, 5.2, 4.1, 4.2, 3.1, 3.2, 2.1, 2.2, 1.1 & 1.2 with class assignments');
+        $this->command->info('Created ' . count($allStudents) . ' students for 6.1, 6.2, 5.1, 5.2, 4.1, 4.2, 3.1, 3.2, 2.1, 2.2, 1.1 & 1.2 with class assignments');
     }
 }

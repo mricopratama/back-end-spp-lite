@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ClassRequest;
+use App\Http\Requests\UpdateClassRequest;
 use App\Models\Classes;
 
 class ClassController extends Controller
@@ -65,8 +66,9 @@ class ClassController extends Controller
 
     /**
      * Update the specified resource in storage.
+     * Auto-generate ulang nama kelas berdasarkan level baru.
      */
-    public function update(ClassRequest $request, string $id)
+    public function update(UpdateClassRequest $request, string $id)
     {
         $class = Classes::find($id);
 
@@ -75,7 +77,30 @@ class ClassController extends Controller
         }
 
         $validated = $request->validated();
-        $class->update($validated);
+        $newLevel = $validated['level'];
+
+        // Auto-generate name berdasarkan level baru
+        $lastClass = Classes::where('level', $newLevel)
+            ->where('id', '!=', $id) // Exclude kelas yang sedang diupdate
+            ->where('name', 'like', $newLevel . '.%')
+            ->orderByRaw('CAST(SUBSTRING_INDEX(name, ".", -1) AS UNSIGNED) DESC')
+            ->first();
+
+        if ($lastClass) {
+            // Extract the number after the dot and increment
+            $parts = explode('.', $lastClass->name);
+            $lastNumber = intval(end($parts));
+            $newName = $newLevel . '.' . ($lastNumber + 1);
+        } else {
+            // First class for this level
+            $newName = $newLevel . '.1';
+        }
+
+        // Update level dan name
+        $class->update([
+            'level' => $newLevel,
+            'name' => $newName
+        ]);
 
         return ApiResponse::success($class, 'Class updated successfully');
     }

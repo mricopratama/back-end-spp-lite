@@ -500,7 +500,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"2026/2027\",\n    \"is_active\": true\n}",
+									"raw": "{\n    \"is_active\": true\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -515,7 +515,8 @@
 									"path": [
 										"academic-years"
 									]
-								}
+								},
+								"description": "Create academic year. Field 'name' akan auto-generate tahun ajaran selanjutnya. Jika belum ada data, dimulai dari tahun sekarang. Body hanya butuh 'is_active' (opsional, default false)."
 							},
 							"response": [
 								{
@@ -525,7 +526,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"2024/2025\",\n    \"is_active\": true\n}",
+											"raw": "{\n    \"is_active\": true\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -547,7 +548,38 @@
 									"_postman_previewlanguage": "Text",
 									"header": [],
 									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Academic year created\"\n    },\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"2024/2025\",\n        \"is_active\": true,\n        \"created_at\": \"2024-06-01T10:00:00.000000Z\"\n    }\n}"
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Academic year created successfully\"\n    },\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"2026/2027\",\n        \"is_active\": true,\n        \"created_at\": \"2026-01-08T10:00:00.000000Z\",\n        \"updated_at\": \"2026-01-08T10:00:00.000000Z\"\n    }\n}"
+								},
+								{
+									"name": "Error - Field name prohibited",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"2027/2028\",\n    \"is_active\": true\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/academic-years",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"academic-years"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"success\": false,\n    \"message\": \"Validation error\",\n    \"errors\": {\n        \"name\": [\n            \"Field name tidak boleh diisi. Tahun ajaran akan di-generate otomatis.\"\n        ]\n    }\n}"
 								}
 							]
 						},
@@ -558,7 +590,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"2024/2025 Revised\",\n    \"is_active\": true\n}",
+									"raw": "{\n    \"is_active\": false\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -574,7 +606,8 @@
 										"academic-years",
 										"{{active_academic_year_id}}"
 									]
-								}
+								},
+								"description": "Update academic year. Hanya bisa update field 'is_active'. Field 'name' tidak bisa diubah."
 							},
 							"response": [
 								{
@@ -584,7 +617,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"2024/2025 Revised\",\n    \"is_active\": true\n}",
+											"raw": "{\n    \"is_active\": false\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -761,7 +794,8 @@
 									"path": [
 										"classes"
 									]
-								}
+								},
+								"description": "Create class. Field 'name' akan auto-generate berdasarkan level (contoh: 1.1, 1.2, 2.1, dst). Body hanya butuh 'level' (1-6)."
 							},
 							"response": [
 								{
@@ -793,7 +827,38 @@
 									"_postman_previewlanguage": "Text",
 									"header": [],
 									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Class created\"\n    },\n    \"data\": {\n        \"id\": 1,\n        \"name\": \"1.1\",\n        \"level\": 1,\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Class created successfully\"\n    },\n    \"data\": {\n        \"id\": 1,\n        \"name\": \"1.1\",\n        \"level\": 1,\n        \"created_at\": \"2026-01-08T00:00:00.000000Z\",\n        \"updated_at\": \"2026-01-08T00:00:00.000000Z\"\n    }\n}"
+								},
+								{
+									"name": "Error - Field name prohibited",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"1.3\",\n    \"level\": 1\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/classes",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"classes"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"success\": false,\n    \"message\": \"Validation error\",\n    \"errors\": {\n        \"name\": [\n            \"Field name tidak boleh diisi. Nama kelas akan di-generate otomatis.\"\n        ]\n    }\n}"
 								}
 							]
 						},
@@ -804,7 +869,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"1.2\",\n    \"level\": 1\n}",
+									"raw": "{\n    \"level\": 2\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -820,7 +885,8 @@
 										"classes",
 										"{{saved_class_id}}"
 									]
-								}
+								},
+								"description": "Update class. Hanya bisa update field 'level'. Field 'name' akan auto-generate ulang berdasarkan level baru."
 							},
 							"response": [
 								{
@@ -830,7 +896,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"1.2\",\n    \"level\": 1\n}",
+											"raw": "{\n    \"level\": 2\n}",
 											"options": {
 												"raw": {
 													"language": "json"

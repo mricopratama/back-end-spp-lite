@@ -23,9 +23,22 @@ class AcademicYearRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Untuk create: hanya terima is_active (name auto-generate)
+        // Untuk update: terima is_active saja (name tidak bisa diubah)
         return [
-            'name' => 'required|string|max:20|unique:academic_years,name,' . $this->route('academic_year'),
-            'is_active' => 'required|boolean'
+            'name' => 'prohibited', // Tolak jika ada field name
+            'is_active' => 'nullable|boolean'
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'name.prohibited' => 'Field name tidak boleh diisi. Tahun ajaran akan di-generate otomatis.',
+            'is_active.boolean' => 'Field is_active harus berupa boolean (true/false)',
         ];
     }
 

@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class ClassRequest extends FormRequest
+class UpdateClassRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,7 +23,7 @@ class ClassRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Untuk create: hanya terima level (name auto-generate)
+        // Untuk update: hanya terima level (name tidak bisa diubah)
         return [
             'name' => 'prohibited', // Tolak jika ada field name
             'level' => 'required|integer|min:1|max:6'
@@ -36,7 +36,7 @@ class ClassRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.prohibited' => 'Field name tidak boleh diisi. Nama kelas akan di-generate otomatis.',
+            'name.prohibited' => 'Field name tidak boleh diisi. Nama kelas akan di-generate otomatis berdasarkan level.',
             'level.required' => 'Field level wajib diisi',
             'level.integer' => 'Field level harus berupa angka',
             'level.min' => 'Level minimal adalah 1',
@@ -46,11 +46,6 @@ class ClassRequest extends FormRequest
 
     /**
      * Handle a failed validation attempt.
-     *
-     * @param  \Illuminate\Contracts\Validation\Validator  $validator
-     * @return void
-     *
-     * @throws \Illuminate\Http\Exceptions\HttpResponseException
      */
     protected function failedValidation(Validator $validator)
     {
