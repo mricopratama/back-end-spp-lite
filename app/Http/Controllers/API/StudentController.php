@@ -421,7 +421,47 @@ class StudentController extends Controller
                 }
             }
 
-            $student->update($request->validated());
+            // Prepare student data
+            $studentData = $request->validated();
+            $classId = $studentData['class_id'] ?? null;
+            $academicYearId = $studentData['academic_year_id'] ?? null;
+
+            // Remove class_id and academic_year_id from student data
+            unset($studentData['class_id'], $studentData['academic_year_id']);
+
+            // Update student basic data
+            $student->update($studentData);
+
+            // Update class if class_id provided
+            if ($classId) {
+                // If academic_year_id not provided, use active academic year
+                if (!$academicYearId) {
+                    $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+                    if (!$activeYear) {
+                        DB::rollBack();
+                        return ApiResponse::error('Tidak ada tahun ajaran aktif. Harap tentukan academic_year_id secara manual.', 400);
+                    }
+                    $academicYearId = $activeYear->id;
+                }
+
+                // Check if history exists for this academic year
+                $existingHistory = StudentClassHistory::where([
+                    'student_id' => $student->id,
+                    'academic_year_id' => $academicYearId,
+                ])->first();
+
+                if ($existingHistory) {
+                    // Update existing history
+                    $existingHistory->update(['class_id' => $classId]);
+                } else {
+                    // Create new history
+                    StudentClassHistory::create([
+                        'student_id' => $student->id,
+                        'class_id' => $classId,
+                        'academic_year_id' => $academicYearId,
+                    ]);
+                }
+            }
 
             DB::commit();
 

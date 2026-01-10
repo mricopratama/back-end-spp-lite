@@ -37,6 +37,8 @@ class UpdateStudentRequest extends FormRequest
             'address' => 'nullable|string',
             'phone_number' => 'nullable|string|max:20',
             'status' => 'required|in:active,inactive,graduated',
+            'class_id' => 'nullable|exists:classes,id',
+            'academic_year_id' => 'nullable|exists:academic_years,id',
         ];
     }
 
@@ -51,6 +53,8 @@ class UpdateStudentRequest extends FormRequest
             'full_name.required' => 'Nama lengkap wajib diisi',
             'status.required' => 'Status wajib diisi',
             'status.in' => 'Status harus active, inactive, atau graduated',
+            'class_id.exists' => 'Kelas tidak ditemukan',
+            'academic_year_id.exists' => 'Tahun ajaran tidak ditemukan',
         ];
     }
 

@@ -1694,10 +1694,16 @@
 							"name": "Update Student",
 							"request": {
 								"method": "PUT",
-								"header": [],
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"nis\": \"2018003\",\r\n    \"full_name\": \"Budi Santoso\",\r\n    \"address\": \"Jl. Sudirman No. 10\",\r\n    \"phone_number\": \"08123456789\",\r\n    \"status\": \"active\"\r\n}",
+									"raw": "{\r\n    \"nis\": \"2027003\",\r\n    \"full_name\": \"Budi Santoso\",\r\n    \"address\": \"Jl. Sudirman No. 10\",\r\n    \"phone_number\": \"08123456789\",\r\n    \"status\": \"active\",\r\n    \"class_id\": {{saved_class_id}}\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1713,9 +1719,48 @@
 										"students",
 										"{{saved_student_id}}"
 									]
-								}
+								},
+								"description": "Update student data including personal info and class assignment.\n\n**Optional Fields for Class Update:**\n- `class_id`: ID kelas baru (optional)\n- `academic_year_id`: ID tahun ajaran (optional, default: active academic year)\n\n**Behavior:**\n- Jika hanya kirim data pribadi (nis, full_name, dll): hanya update data siswa\n- Jika kirim `class_id` tanpa `academic_year_id`: update kelas untuk tahun ajaran aktif\n- Jika kirim `class_id` + `academic_year_id`: update kelas untuk tahun ajaran spesifik"
 							},
-							"response": []
+							"response": [
+								{
+									"name": "Success Update",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"nis\": \"2024001\",\r\n    \"full_name\": \"Budi Santoso Updated\",\r\n    \"address\": \"Jl. Sudirman No. 10\",\r\n    \"phone_number\": \"08123456789\",\r\n    \"status\": \"active\",\r\n    \"class_id\": 5,\r\n    \"academic_year_id\": 8\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{base_url}}/students/1",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"students",
+												"1"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Student updated successfully\"\n    },\n    \"data\": {\n        \"id\": 1,\n        \"nis\": \"2024001\",\n        \"full_name\": \"Budi Santoso Updated\",\n        \"address\": \"Jl. Sudirman No. 10\",\n        \"phone_number\": \"08123456789\",\n        \"status\": \"active\",\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\",\n        \"updated_at\": \"2024-01-10T00:00:00.000000Z\",\n        \"current_class\": {\n            \"id\": 5,\n            \"name\": \"3.1\",\n            \"level\": 3\n        }\n    }\n}"
+								}
+							]
 						},
 						{
 							"name": "Delete Student",

@@ -51,24 +51,28 @@ class Student extends Model
     }
 
     /**
-     * Get current class (from most recent academic year)
+     * Get current class (from active academic year)
      */
     public function currentClass()
     {
         return $this->belongsTo(StudentClassHistory::class, 'id', 'student_id')
             ->with(['class', 'academicYear'])
-            ->latest('academic_year_id')
+            ->whereHas('academicYear', function ($query) {
+                $query->where('is_active', true);
+            })
             ->limit(1);
     }
 
     /**
-     * Get current class history record with class and academic year
+     * Get current class history record with class and academic year (from active academic year)
      */
     public function currentClassHistory()
     {
         return $this->hasOne(StudentClassHistory::class)
             ->with(['class', 'academicYear'])
-            ->latest('academic_year_id');
+            ->whereHas('academicYear', function ($query) {
+                $query->where('is_active', true);
+            });
     }
 
     /**
