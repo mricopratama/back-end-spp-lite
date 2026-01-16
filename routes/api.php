@@ -24,7 +24,8 @@ Route::get('/ping', function() {
 
 // Public routes (no auth)
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    // Rate limit: 5 attempts per minute
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 });
 
 // Protected routes (require auth:sanctum)

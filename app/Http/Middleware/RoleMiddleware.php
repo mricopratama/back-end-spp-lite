@@ -23,11 +23,20 @@ class RoleMiddleware
             return ApiResponse::error('Unauthorized', 401);
         }
 
+        // Check if user has role relationship loaded
+        if (!$user->relationLoaded('role')) {
+            $user->load('role');
+        }
+
         // Get the role name from the user's role relationship
-        $userRole = $user->role->name ?? null;
+        if (!$user->role) {
+            return ApiResponse::error('User role not found. Please contact administrator.', 403);
+        }
+
+        $userRole = $user->role->name;
 
         if ($userRole !== $role) {
-            return ApiResponse::error('Forbidden', 403);
+            return ApiResponse::error('Forbidden: Insufficient permissions', 403);
         }
 
         return $next($request);

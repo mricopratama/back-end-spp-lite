@@ -4,9 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Student;
+use App\Models\User;
+use App\Models\Role;
 use App\Models\StudentClassHistory;
 use App\Models\AcademicYear;
 use App\Models\Classes;
+use Illuminate\Support\Facades\Hash;
 
 class StudentSeeder extends Seeder
 {
@@ -682,6 +685,10 @@ class StudentSeeder extends Seeder
             ];
         }
 
+        // Get student role for user creation
+        $studentRole = Role::where('name', 'student')->first();
+        $createdAccounts = 0;
+
         foreach ($allStudents as $studentData) {
             $student = Student::create([
                 'nis' => $studentData['nis'],
@@ -722,6 +729,10 @@ class StudentSeeder extends Seeder
                 $tahunAjarAktif = 2025;
                 $tahunMasuk = $tahunAjarAktif - ($kelasAkhirLevel - 1);
             }
+
+            // Simpan tahun ajaran pertama untuk generate username
+            $firstAcademicYear = null;
+
             // Buat class history kelas 1 s/d kelas akhir
             for ($i = 1; $i <= $kelasAkhirLevel; $i++) {
                 $tahun = $tahunMasuk + ($i - 1);
@@ -734,10 +745,65 @@ class StudentSeeder extends Seeder
                         'class_id' => $kelasObj->id,
                         'academic_year_id' => $academicYearObj->id,
                     ]);
+
+                    // Simpan tahun ajaran pertama (untuk generate username)
+                    if ($i === 1) {
+                        $firstAcademicYear = $academicYearObj->name;
+                    }
                 }
+            }
+
+            // Auto-generate user account untuk SEMUA siswa (active maupun graduated)
+            if ($studentRole && $firstAcademicYear) {
+                $username = $this->generateUsername($student->full_name, $firstAcademicYear);
+
+                // Check if username exists, add number suffix if needed
+                $originalUsername = $username;
+                $counter = 1;
+                while (User::where('username', $username)->exists()) {
+                    $username = $originalUsername . $counter;
+                    $counter++;
+                }
+
+                // Create user account
+                User::create([
+                    'username' => $username,
+                    'password_hash' => Hash::make($username),
+                    'full_name' => $student->full_name,
+                    'role_id' => $studentRole->id,
+                    'student_id' => $student->id,
+                ]);
+
+                $createdAccounts++;
+            }
+        }
+    }
+
+    /**
+     * Generate username from full name and academic year
+     * Example: "Muhammad Faiz Rizqi" + "2025/2026" = "muhammadfaizrizqi25"
+     * Example: "Masyitoh" + "2025/2026" = "masyitoh25"
+     */
+    private function generateUsername($fullName, $academicYear = null)
+    {
+        // Clean special characters and convert to lowercase
+        $cleanName = preg_replace('/[^a-zA-Z0-9\s]/', '', $fullName);
+        $cleanName = strtolower($cleanName);
+
+        // Remove all spaces to create username
+        $namePart = str_replace(' ', '', $cleanName);
+
+        // Add year suffix (last 2 digits of first year)
+        if ($academicYear) {
+            // Extract first year from format like "2025/2026" or "2025-2026"
+            preg_match('/\d{4}/', $academicYear, $matches);
+            if (!empty($matches)) {
+                $year = $matches[0];
+                $yearSuffix = substr($year, -2); // Get last 2 digits
+                $namePart .= $yearSuffix;
             }
         }
 
-        $this->command->info('Created ' . count($allStudents) . ' students for 6.1, 6.2, 5.1, 5.2, 4.1, 4.2, 3.1, 3.2, 2.1, 2.2, 1.1 & 1.2 with class assignments');
+        return $namePart;
     }
 }

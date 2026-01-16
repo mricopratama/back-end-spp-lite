@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\Role;
 use App\Models\Classes;
 use App\Models\StudentClassHistory;
 use App\Http\Requests\StoreStudentRequest;
@@ -338,6 +339,7 @@ class StudentController extends Controller
 
     /**
      * Store a newly created student
+     * Auto-generates user account with username & password
      */
     public function store(StoreStudentRequest $request)
     {
@@ -361,13 +363,48 @@ class StudentController extends Controller
                 'academic_year_id' => $academicYearId,
             ]);
 
+            // Auto-generate user account
+            $academicYear = \App\Models\AcademicYear::find($academicYearId);
+            $username = $this->generateUsername($student->full_name, $academicYear?->name);
+
+            // Check if username exists, add number suffix if needed
+            $originalUsername = $username;
+            $counter = 1;
+            while (User::where('username', $username)->exists()) {
+                $username = $originalUsername . $counter;
+                $counter++;
+            }
+
+            // Get student role
+            $studentRole = Role::where('name', 'student')->first();
+            if (!$studentRole) {
+                DB::rollBack();
+                return ApiResponse::error('Student role not found in system', 500);
+            }
+
+            // Create user account
+            $user = User::create([
+                'username' => $username,
+                'password_hash' => Hash::make($username), // Password sama dengan username
+                'full_name' => $student->full_name,
+                'role_id' => $studentRole->id,
+                'student_id' => $student->id,
+            ]);
+
             DB::commit();
 
-            return ApiResponse::success(
-                $student->load('currentClass'),
-                'Student created successfully',
-                201
-            );
+            // Refresh student data
+            $student->refresh();
+
+            return ApiResponse::success([
+                'student' => $student,
+                'account' => [
+                    'user_id' => $user->id,
+                    'username' => $username,
+                    'default_password' => $username,
+                    'note' => 'Password sama dengan username. Harap ganti setelah login pertama kali.',
+                ],
+            ], 'Student and user account created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::error('Failed to create student: ' . $e->getMessage(), 500);
@@ -429,8 +466,18 @@ class StudentController extends Controller
             // Remove class_id and academic_year_id from student data
             unset($studentData['class_id'], $studentData['academic_year_id']);
 
+            // Check if full_name changed
+            $nameChanged = isset($studentData['full_name']) && $studentData['full_name'] !== $student->full_name;
+
             // Update student basic data
             $student->update($studentData);
+
+            // If name changed and student has user account, sync full_name to user table
+            if ($nameChanged && $student->user) {
+                $student->user->update([
+                    'full_name' => $studentData['full_name']
+                ]);
+            }
 
             // Update class if class_id provided
             if ($classId) {
@@ -465,8 +512,11 @@ class StudentController extends Controller
 
             DB::commit();
 
+            // Refresh student data tanpa load currentClass relation
+            $student->refresh();
+
             return ApiResponse::success(
-                $student->load('currentClass'),
+                $student,
                 'Student updated successfully'
             );
         } catch (\Exception $e) {
@@ -870,8 +920,9 @@ class StudentController extends Controller
                 return ApiResponse::error('User account already exists for this student', 400);
             }
 
-            // Generate username from name + class
-            $username = $this->generateUsername($student->full_name, $student->currentClass?->name);
+            // Generate username from name + academic year
+            $currentHistory = $student->classHistories()->with('academicYear')->latest()->first();
+            $username = $this->generateUsername($student->full_name, $currentHistory?->academicYear?->name);
 
             // Check if username exists, add number suffix if needed
             $originalUsername = $username;
@@ -1068,6 +1119,32 @@ class StudentController extends Controller
                         ]);
                     }
 
+                    // Auto-generate user account for imported student
+                    $academicYear = \App\Models\AcademicYear::find($finalAcademicYearId);
+                    if ($academicYear) {
+                        $username = $this->generateUsername($student->full_name, $academicYear->name);
+
+                        // Check if username exists, add number suffix if needed
+                        $originalUsername = $username;
+                        $counter = 1;
+                        while (User::where('username', $username)->exists()) {
+                            $username = $originalUsername . $counter;
+                            $counter++;
+                        }
+
+                        // Get student role
+                        $studentRole = Role::where('name', 'student')->first();
+                        if ($studentRole) {
+                            // Create user account
+                            User::create([
+                                'username' => $username,
+                                'password_hash' => Hash::make($username),
+                                'full_name' => $student->full_name,
+                                'role_id' => $studentRole->id,
+                                'student_id' => $student->id,
+                            ]);
+                        }
+                    }
 
                     $inserted++;
                 } catch (\Exception $e) {
@@ -1301,26 +1378,31 @@ class StudentController extends Controller
     }
 
     /**
-     * Generate username from full name and class
-     * Example: "Alika Azalea Qusara" + "1.1" = "alikaazalea11"
+     * Generate username from full name and academic year
+     * Example: "Muhammad Faiz Rizqi" + "2025/2026" = "muhammadfaizrizqi25"
+     * Example: "Masyitoh" + "2025/2026" = "masyitoh25"
      */
-    private function generateUsername($fullName, $className = null)
+    private function generateUsername($fullName, $academicYear = null)
     {
-        // Get first 2 words
-        $words = explode(' ', $fullName);
-        $firstTwoWords = array_slice($words, 0, 2);
-        $username = strtolower(implode('', $firstTwoWords));
+        // Clean special characters and convert to lowercase
+        $cleanName = preg_replace('/[^a-zA-Z0-9\s]/', '', $fullName);
+        $cleanName = strtolower($cleanName);
 
-        // Remove special characters
-        $username = preg_replace('/[^a-z0-9]/', '', $username);
+        // Remove all spaces to create username
+        $namePart = str_replace(' ', '', $cleanName);
 
-        // Add class number if available
-        if ($className) {
-            $classNumber = preg_replace('/[^0-9]/', '', $className);
-            $username .= $classNumber;
+        // Add year suffix (last 2 digits of first year)
+        if ($academicYear) {
+            // Extract first year from format like "2025/2026" or "2025-2026"
+            preg_match('/\d{4}/', $academicYear, $matches);
+            if (!empty($matches)) {
+                $year = $matches[0];
+                $yearSuffix = substr($year, -2); // Get last 2 digits
+                $namePart .= $yearSuffix;
+            }
         }
 
-        return $username;
+        return $namePart;
     }
 
     /**
