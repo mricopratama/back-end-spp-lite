@@ -25,6 +25,7 @@ class FeeCategoryRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:100',
+            'type' => 'required|in:spp,ekstrakurikuler,buku,pendaftaran,lainnya',
             'default_amount' => 'required|integer|min:0', // min:0 allows free services/items
             'description' => 'nullable|string|max:255'
         ];

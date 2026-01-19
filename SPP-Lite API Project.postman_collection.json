@@ -1006,7 +1006,7 @@
 									"_postman_previewlanguage": "Text",
 									"header": [],
 									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of fee categories\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"SPP Bulanan\",\n            \"default_amount\": 500000\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Uang Gedung\",\n            \"default_amount\": 2000000\n        }\n    ]\n}"
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of fee categories\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"SPP Bulanan\",\n            \"type\": \"spp\",\n            \"default_amount\": 500000\n        },\n        {\n            \"id\": 2,\n            \"name\": \"English Club\",\n            \"type\": \"ekstrakurikuler\",\n            \"default_amount\": 450000\n        },\n        {\n            \"id\": 3,\n            \"name\": \"Buku Kelas 1\",\n            \"type\": \"buku\",\n            \"default_amount\": 650000\n        }\n    ]\n}"
 								}
 							]
 						},
@@ -1034,7 +1034,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"default_amount\": 180000\n}",
+									"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"type\": \"spp\",\n    \"default_amount\": 180000\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1059,7 +1059,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"default_amount\": 500000\n}",
+											"raw": "{\n    \"name\": \"SPP Bulanan\",\n    \"type\": \"spp\",\n    \"default_amount\": 500000\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -1081,7 +1081,7 @@
 									"_postman_previewlanguage": "Text",
 									"header": [],
 									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Fee category created\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan\",\n        \"default_amount\": 500000,\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
+									"body": "{\n    \"meta\": {\n        \"code\": 201,\n        \"status\": \"success\",\n        \"message\": \"Fee category created\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan\",\n        \"type\": \"spp\",\n        \"default_amount\": 500000,\n        \"created_at\": \"2024-01-01T00:00:00.000000Z\"\n    }\n}"
 								}
 							]
 						},
@@ -1092,7 +1092,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"default_amount\": 600000\n}",
+									"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"type\": \"spp\",\n    \"default_amount\": 600000\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1118,7 +1118,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"default_amount\": 600000\n}",
+											"raw": "{\n    \"name\": \"SPP Bulanan (Naik)\",\n    \"type\": \"spp\",\n    \"default_amount\": 600000\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -1141,7 +1141,7 @@
 									"_postman_previewlanguage": "Text",
 									"header": [],
 									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Fee category updated\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan (Naik)\",\n        \"default_amount\": 600000\n    }\n}"
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Fee category updated\"\n    },\n    \"data\": {\n        \"id\": 5,\n        \"name\": \"SPP Bulanan (Naik)\",\n        \"type\": \"spp\",\n        \"default_amount\": 600000\n    }\n}"
 								}
 							]
 						},

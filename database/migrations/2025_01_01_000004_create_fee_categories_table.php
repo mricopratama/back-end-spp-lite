@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('fee_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->enum('type', ['spp', 'ekstrakurikuler', 'buku', 'pendaftaran', 'lainnya'])->default('lainnya');
             $table->decimal('default_amount', 12, 2)->default(0);
             $table->string('description', 255)->nullable();
             $table->timestamps();
