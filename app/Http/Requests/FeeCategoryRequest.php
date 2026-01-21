@@ -23,8 +23,10 @@ class FeeCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
+        $feeCategory = $this->route('fee_category');
+
         return [
-            'name' => 'required|string|max:100',
+            'name' => 'required|string|max:100|unique:fee_categories,name,' . $feeCategory,
             'type' => 'required|in:spp,ekstrakurikuler,buku,pendaftaran,lainnya',
             'default_amount' => 'required|integer|min:0', // min:0 allows free services/items
             'description' => 'nullable|string|max:255'
