@@ -25,10 +25,25 @@ class FeeCategoryRequest extends FormRequest
     {
         $feeCategory = $this->route('fee_category');
 
+        $nameRules = [
+            'required',
+            'string',
+            'max:100',
+        ];
+
+        // Add unique rule with proper handling for both create and update
+        if ($feeCategory) {
+            // Update: ignore current record
+            $nameRules[] = 'unique:fee_categories,name,' . $feeCategory . ',id';
+        } else {
+            // Create: simple unique check
+            $nameRules[] = 'unique:fee_categories,name';
+        }
+
         return [
-            'name' => 'required|string|max:100|unique:fee_categories,name,' . $feeCategory,
+            'name' => $nameRules,
             'type' => 'required|in:spp,ekstrakurikuler,buku,pendaftaran,lainnya',
-            'default_amount' => 'required|integer|min:0', // min:0 allows free services/items
+            'default_amount' => 'required|integer|min:0',
             'description' => 'nullable|string|max:255'
         ];
     }
