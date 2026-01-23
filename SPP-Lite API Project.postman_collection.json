@@ -982,12 +982,21 @@
 									],
 									"path": [
 										"fee-categories"
+									],
+									"query": [
+										{
+											"key": "type",
+											"value": "spp",
+											"description": "Filter: spp, ekstrakurikuler, buku, pendaftaran, lainnya",
+											"disabled": true
+										}
 									]
-								}
+								},
+								"description": "List semua kategori pembayaran, diurutkan berdasarkan type (ASC) kemudian name (ASC). Bisa difilter berdasarkan type."
 							},
 							"response": [
 								{
-									"name": "Success List",
+									"name": "Success List (All)",
 									"originalRequest": {
 										"method": "GET",
 										"header": [],
@@ -1003,10 +1012,38 @@
 									},
 									"status": "OK",
 									"code": 200,
-									"_postman_previewlanguage": "Text",
+									"_postman_previewlanguage": "json",
 									"header": [],
 									"cookie": [],
-									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of fee categories\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"SPP Bulanan\",\n            \"type\": \"spp\",\n            \"default_amount\": 500000\n        },\n        {\n            \"id\": 2,\n            \"name\": \"English Club\",\n            \"type\": \"ekstrakurikuler\",\n            \"default_amount\": 450000\n        },\n        {\n            \"id\": 3,\n            \"name\": \"Buku Kelas 1\",\n            \"type\": \"buku\",\n            \"default_amount\": 650000\n        }\n    ]\n}"
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of fee categories\"\n    },\n    \"data\": [\n        {\n            \"id\": 3,\n            \"name\": \"Buku Kelas 1\",\n            \"type\": \"buku\",\n            \"default_amount\": 650000,\n            \"description\": null\n        },\n        {\n            \"id\": 2,\n            \"name\": \"English Club\",\n            \"type\": \"ekstrakurikuler\",\n            \"default_amount\": 450000,\n            \"description\": null\n        },\n        {\n            \"id\": 4,\n            \"name\": \"Daftar Ulang\",\n            \"type\": \"pendaftaran\",\n            \"default_amount\": 1000000,\n            \"description\": null\n        },\n        {\n            \"id\": 1,\n            \"name\": \"SPP Bulanan\",\n            \"type\": \"spp\",\n            \"default_amount\": 500000,\n            \"description\": null\n        }\n    ]\n}"
+								},
+								{
+									"name": "Success List (Filter by Type)",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/fee-categories?type=spp",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"fee-categories"
+											],
+											"query": [
+												{
+													"key": "type",
+													"value": "spp"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [],
+									"cookie": [],
+									"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"List of fee categories\"\n    },\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"SPP Bulanan\",\n            \"type\": \"spp\",\n            \"default_amount\": 500000,\n            \"description\": null\n        }\n    ]\n}"
 								}
 							]
 						},
@@ -2174,7 +2211,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/invoices?page=1&per_page=15&status=UNPAID",
+							"raw": "{{base_url}}/invoices?page=1&per_page=15&status=unpaid",
 							"host": [
 								"{{base_url}}"
 							],
@@ -2192,12 +2229,36 @@
 								},
 								{
 									"key": "status",
-									"value": "UNPAID",
-									"description": "Filter by status: UNPAID, PARTIAL, PAID"
+									"value": "unpaid",
+									"description": "Filter: unpaid, paid, partial"
+								},
+								{
+									"key": "nis",
+									"value": "2024001",
+									"description": "Filter by student NIS (Admin only)",
+									"disabled": true
+								},
+								{
+									"key": "student_id",
+									"value": "1",
+									"description": "Filter by student ID (Admin only)",
+									"disabled": true
+								},
+								{
+									"key": "academic_year_id",
+									"value": "1",
+									"description": "Filter by academic year",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "INV/2024",
+									"description": "Search by invoice number or student name",
+									"disabled": true
 								}
 							]
 						},
-						"description": "List semua invoice dengan pagination dan filter (Admin only)."
+						"description": "List semua invoice dengan pagination dan filter (Admin only). Admin bisa filter berdasarkan NIS atau student_id."
 					},
 					"response": [
 						{
@@ -2491,7 +2552,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/invoices/my?status=UNPAID",
+							"raw": "{{base_url}}/invoices/my",
 							"host": [
 								"{{base_url}}"
 							],
@@ -2502,16 +2563,17 @@
 							"query": [
 								{
 									"key": "status",
-									"value": "UNPAID",
-									"description": "Filter: UNPAID, PAID, PARTIAL"
+									"value": "unpaid",
+									"description": "Filter: unpaid, paid, partial",
+									"disabled": true
 								}
 							]
 						},
-						"description": "Endpoint khusus Siswa. Menggunakan Student Token."
+						"description": "Endpoint untuk Siswa melihat invoice mereka sendiri. Student tidak bisa menggunakan parameter nis untuk melihat invoice siswa lain (akan diblok oleh middleware)."
 					},
 					"response": [
 						{
-							"name": "Success List (My)",
+							"name": "Success List (Student)",
 							"originalRequest": {
 								"auth": {
 									"type": "bearer",
@@ -2526,7 +2588,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{base_url}}/invoices/my?status=UNPAID",
+									"raw": "{{base_url}}/invoices/my?status=unpaid",
 									"host": [
 										"{{base_url}}"
 									],
@@ -2537,19 +2599,188 @@
 									"query": [
 										{
 											"key": "status",
-											"value": "UNPAID",
-											"description": "Filter: UNPAID, PAID, PARTIAL"
+											"value": "unpaid"
 										}
 									]
-								},
-								"description": "Endpoint khusus Siswa. Menggunakan Student Token."
+								}
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [],
 							"cookie": [],
-							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"My invoices fetched\"\n    },\n    \"data\": [\n        {\n            \"id\": 501,\n            \"invoice_number\": \"INV/2024/02/001\",\n            \"total_amount\": 525000,\n            \"status\": \"UNPAID\",\n            \"due_date\": \"2024-02-20\"\n        }\n    ]\n}"
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"My invoice items fetched\"\n    },\n    \"data\": {\n        \"current_page\": 1,\n        \"data\": [\n            {\n                \"id\": 501,\n                \"invoice_number\": \"INV/2024/02/001\",\n                \"amount\": 150000,\n                \"paid_amount\": 0,\n                \"status\": \"unpaid\",\n                \"due_date\": \"2024-02-20\",\n                \"student\": {\n                    \"id\": 1,\n                    \"nis\": \"2024001\",\n                    \"full_name\": \"Ahmad Zulkarnain\"\n                }\n            }\n        ],\n        \"total\": 5\n    }\n}"
+						},
+						{
+							"name": "Forbidden (Student Access Other NIS)",
+							"originalRequest": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{student_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/my?nis=2024001",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"my"
+									],
+									"query": [
+										{
+											"key": "nis",
+											"value": "2024001",
+											"description": "Student mencoba akses NIS lain"
+										}
+									]
+								}
+							},
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 403,\n        \"status\": \"error\",\n        \"message\": \"Forbidden: You can only access your own data\"\n    },\n    \"data\": null\n}"
+						}
+					]
+				},
+				{
+					"name": "4b. List Invoices by NIS (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/invoices/my?nis=2024001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"invoices",
+								"my"
+							],
+							"query": [
+								{
+									"key": "nis",
+									"value": "2024001",
+									"description": "NIS siswa yang ingin dilihat invoicenya"
+								},
+								{
+									"key": "status",
+									"value": "unpaid",
+									"description": "Filter: unpaid, paid, partial",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "15",
+									"description": "Jumlah data per halaman",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Endpoint untuk Admin melihat invoice siswa tertentu berdasarkan NIS. Admin wajib menyertakan parameter nis."
+					},
+					"response": [
+						{
+							"name": "Success List (Admin by NIS)",
+							"originalRequest": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{admin_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/my?nis=2024001&status=unpaid",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"my"
+									],
+									"query": [
+										{
+											"key": "nis",
+											"value": "2024001"
+										},
+										{
+											"key": "status",
+											"value": "unpaid"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 200,\n        \"status\": \"success\",\n        \"message\": \"Invoice items for Ahmad Zulkarnain (2024001)\"\n    },\n    \"data\": {\n        \"current_page\": 1,\n        \"data\": [\n            {\n                \"id\": 501,\n                \"invoice_number\": \"INV/2024/02/001\",\n                \"amount\": 150000,\n                \"paid_amount\": 0,\n                \"status\": \"unpaid\",\n                \"period_month\": 2,\n                \"due_date\": \"2024-02-20\",\n                \"student\": {\n                    \"id\": 1,\n                    \"nis\": \"2024001\",\n                    \"full_name\": \"Ahmad Zulkarnain\"\n                },\n                \"academic_year\": {\n                    \"id\": 1,\n                    \"name\": \"2024/2025\"\n                },\n                \"fee_category\": {\n                    \"id\": 1,\n                    \"name\": \"SPP\"\n                }\n            }\n        ],\n        \"total\": 8,\n        \"per_page\": 15\n    }\n}"
+						},
+						{
+							"name": "Bad Request (Admin Without NIS)",
+							"originalRequest": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{admin_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/invoices/my?status=unpaid",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"invoices",
+										"my"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "unpaid"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"meta\": {\n        \"code\": 400,\n        \"status\": \"error\",\n        \"message\": \"Admin must provide nis parameter\"\n    },\n    \"data\": null\n}"
 						}
 					]
 				},

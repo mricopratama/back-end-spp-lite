@@ -79,7 +79,7 @@ Route::middleware(['auth.token'])->group(function () {
         Route::get('/monthly-status/{studentId}', [InvoiceController::class, 'getMonthlyPaymentStatus']);
 
         Route::post('/import', [InvoiceController::class, 'import'])->middleware('role:admin'); // Import from Excel
-        Route::get('/my', [InvoiceController::class, 'myInvoices']); // Student: my invoices (MUST be before /{invoice})
+        Route::get('/my', [InvoiceController::class, 'myInvoices'])->middleware('student.access'); // Student: my invoices (MUST be before /{invoice})
         Route::get('/{invoice}', [InvoiceController::class, 'show']); // Show invoice detail
         Route::delete('/{invoice}', [InvoiceController::class, 'destroy'])->middleware('role:admin'); // Delete invoice
     });

@@ -14,7 +14,17 @@ class FeeCategoryController extends Controller
      */
     public function index()
     {
-        $feeCategories = FeeCategory::orderBy('name', 'asc')->get();
+        $query = FeeCategory::query();
+        
+        // Filter by type if provided
+        if (request()->has('type')) {
+            $query->where('type', request('type'));
+        }
+        
+        $feeCategories = $query->orderByRaw('BINARY type ASC')
+                               ->orderBy('name', 'asc')
+                               ->get();
+                               
         return ApiResponse::success($feeCategories, 'List of fee categories');
     }
 

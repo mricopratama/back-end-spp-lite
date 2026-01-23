@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'auth.token' => \App\Http\Middleware\EnsureTokenIsValid::class,
+            'student.access' => \App\Http\Middleware\StudentAccessMiddleware::class,
             'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         ]);
     })

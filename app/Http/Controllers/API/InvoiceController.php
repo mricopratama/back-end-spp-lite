@@ -39,6 +39,11 @@ class InvoiceController extends Controller
             if ($request->has('student_id') && $user->role->name === 'admin') {
                 $query->where('student_id', $request->student_id);
             }
+            if ($request->has('nis') && $user->role->name === 'admin') {
+                $query->whereHas('student', function($q) use ($request) {
+                    $q->where('nis', $request->nis);
+                });
+            }
             if ($request->has('academic_year_id')) {
                 $query->where('academic_year_id', $request->academic_year_id);
             }
@@ -209,16 +214,46 @@ class InvoiceController extends Controller
     {
         try {
             $user = Auth::user();
-            if (!$user->student_id) {
-                return ApiResponse::error('Not authorized as student', 403);
+            $query = InvoiceItem::with(['academicYear', 'feeCategory', 'student']);
+
+            // Student: MUST only see their own invoices (ignore any nis parameter)
+            if ($user->student_id) {
+                $query->where('student_id', $user->student_id);
             }
-            $query = InvoiceItem::with(['academicYear', 'feeCategory'])
-                ->where('student_id', $user->student_id);
+            // Admin: can filter by NIS
+            elseif ($user->role->name === 'admin') {
+                // Admin must provide nis parameter
+                if (!$request->has('nis')) {
+                    return ApiResponse::error('Admin must provide nis parameter', 400);
+                }
+                $query->whereHas('student', function($q) use ($request) {
+                    $q->where('nis', $request->nis);
+                });
+            }
+            // Not student and not admin
+            else {
+                return ApiResponse::error('Unauthorized', 403);
+            }
+
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
-            $invoices = $query->orderBy('due_date', 'desc')->paginate(15);
-            return ApiResponse::success($invoices, 'My invoice items fetched');
+
+            $perPage = $request->get('per_page', 15);
+            $invoices = $query->orderBy('due_date', 'desc')->paginate($perPage);
+
+            // Dynamic message based on role
+            $message = 'My invoice items fetched';
+            if ($user->role->name === 'admin' && $request->has('nis')) {
+                $student = $invoices->first()?->student;
+                if ($student) {
+                    $message = "Invoice items for {$student->full_name} ({$request->nis})";
+                } else {
+                    $message = "Invoice items for NIS {$request->nis}";
+                }
+            }
+
+            return ApiResponse::success($invoices, $message);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch invoice items: ' . $e->getMessage(), 500);
         }
