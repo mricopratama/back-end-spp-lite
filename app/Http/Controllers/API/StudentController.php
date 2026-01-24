@@ -375,15 +375,14 @@ class StudentController extends Controller
 
             DB::commit();
 
-            // Refresh student data
-            $student->refresh();
+            // Refresh student data dengan relasi
+            $student->load(['user', 'currentClass']);
 
             return ApiResponse::success([
                 'student' => $student,
-                'account' => [
-                    'user_id' => $user->id,
+                'credentials' => [
                     'username' => $username,
-                    'default_password' => $username,
+                    'password' => $username,
                     'note' => 'Password sama dengan username. Harap ganti setelah login pertama kali.',
                 ],
             ], 'Student and user account created successfully', 201);
@@ -917,10 +916,12 @@ class StudentController extends Controller
             DB::commit();
 
             return ApiResponse::success([
-                'user_id' => $user->id,
-                'username' => $username,
-                'default_password' => $username,
-                'role' => 'student',
+                'user' => $user,
+                'credentials' => [
+                    'username' => $username,
+                    'password' => $username,
+                    'note' => 'Password sama dengan username. Harap ganti setelah login pertama kali.',
+                ],
             ], 'User account created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();

@@ -69,13 +69,19 @@ class DashboardController extends Controller
             $partialInvoicesCount = InvoiceItem::where('status', 'partial')->count();
 
             return ApiResponse::success([
-                'total_income_today' => (float) $totalIncomeToday,
-                'total_income_month' => (float) $totalIncomeMonth,
-                'active_students_count' => $activeStudentsCount,
-                'paid_invoice_percentage' => $paidPercentage,
-                'total_outstanding' => (float) $totalOutstanding,
-                'unpaid_invoices_count' => $unpaidInvoicesCount,
-                'partial_invoices_count' => $partialInvoicesCount,
+                'income' => [
+                    'today' => (float) $totalIncomeToday,
+                    'this_month' => (float) $totalIncomeMonth,
+                ],
+                'students' => [
+                    'active_count' => $activeStudentsCount,
+                ],
+                'invoices' => [
+                    'paid_percentage' => $paidPercentage,
+                    'total_outstanding' => (float) $totalOutstanding,
+                    'unpaid_count' => $unpaidInvoicesCount,
+                    'partial_count' => $partialInvoicesCount,
+                ],
                 'recent_payments' => $recentPayments,
             ], 'Admin dashboard statistics fetched');
         } catch (\Exception $e) {
@@ -151,15 +157,21 @@ class DashboardController extends Controller
                 ->first();
 
             return ApiResponse::success([
-                'student_name' => $student->full_name,
-                'student_nis' => $student->nis,
-                'class_name' => $currentClassHistory?->class->name,
-                'academic_year' => $currentClassHistory?->academicYear->name,
-                'total_outstanding_amount' => (float) $totalOutstanding,
-                'unpaid_invoices_count' => $unpaidInvoicesCount,
-                'partial_invoices_count' => $partialInvoicesCount,
-                'last_payment_date' => $lastPayment ? $lastPayment->payment_date->format('Y-m-d') : null,
-                'last_payment_amount' => $lastPayment ? (float) $lastPayment->amount : null,
+                'student' => [
+                    'full_name' => $student->full_name,
+                    'nis' => $student->nis,
+                    'current_class' => $currentClassHistory?->class->name,
+                    'academic_year' => $currentClassHistory?->academicYear->name,
+                ],
+                'financial' => [
+                    'total_outstanding_amount' => (float) $totalOutstanding,
+                    'unpaid_invoices_count' => $unpaidInvoicesCount,
+                    'partial_invoices_count' => $partialInvoicesCount,
+                ],
+                'last_payment' => [
+                    'date' => $lastPayment ? $lastPayment->payment_date->format('Y-m-d') : null,
+                    'amount' => $lastPayment ? (float) $lastPayment->amount : null,
+                ],
                 'recent_invoices' => $recentInvoices,
             ], 'Student dashboard statistics fetched');
         } catch (\Exception $e) {

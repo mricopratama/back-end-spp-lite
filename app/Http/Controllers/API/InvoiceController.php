@@ -81,13 +81,11 @@ class InvoiceController extends Controller
                 'period_month' => $validated['period_month'],
             ]);
             DB::commit();
-            return ApiResponse::success([
-                'invoice_number' => $invoiceNumber,
-                'student_name' => $student->full_name,
-                'amount' => $amount,
-                'status' => 'unpaid',
-                'invoice_item_id' => $invoiceItem->id,
-            ], 'Invoice generated successfully', 201);
+
+            // Refresh untuk get relasi
+            $invoiceItem->load(['student', 'academicYear', 'feeCategory']);
+
+            return ApiResponse::success($invoiceItem, 'Invoice generated successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::error('Failed to create invoice: ' . $e->getMessage(), 500);
@@ -144,9 +142,9 @@ class InvoiceController extends Controller
             }
             DB::commit();
             return ApiResponse::success([
-                'processed_count' => $created,
+                'created_count' => $created,
                 'skipped_count' => $skipped,
-                'total_students' => count($studentIds),
+                'total_count' => count($studentIds),
             ], 'Bulk invoice item generation completed');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -723,9 +721,9 @@ class InvoiceController extends Controller
             DB::commit();
 
             return ApiResponse::success([
-                'created' => $created,
-                'skipped' => $skipped,
-                'total_students' => count($studentIds),
+                'created_count' => $created,
+                'skipped_count' => $skipped,
+                'total_count' => count($studentIds),
                 'total_amount' => array_sum(array_column($details, 'amount')),
                 'period_month' => $validated['period_month'],
                 'details' => $details,
@@ -864,8 +862,8 @@ class InvoiceController extends Controller
             DB::commit();
 
             return ApiResponse::success([
-                'created' => $created,
-                'details' => $details,
+                'created_count' => $created,
+                'invoice_items' => $details,
             ], "Successfully generated {$created} missing invoices");
 
         } catch (\Exception $e) {

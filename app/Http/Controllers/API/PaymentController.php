@@ -173,23 +173,15 @@ class PaymentController extends Controller
 
             DB::commit();
 
-            return ApiResponse::success([
-                'payment' => [
-                    'id' => $payment->id,
-                    'receipt_number' => $receiptNumber,
-                    'amount' => $paymentAmount,
-                    'payment_method' => $payment->payment_method,
-                    'payment_date' => $payment->payment_date,
-                ],
-                'invoice_item' => [
-                    'id' => $invoiceItem->id,
-                    'student_name' => $invoiceItem->student->full_name,
-                    'amount' => $invoiceItem->amount,
-                    'paid_amount' => $invoiceItem->paid_amount,
-                    'remaining_amount' => $invoiceItem->amount - $invoiceItem->paid_amount,
-                    'status' => $invoiceItem->status,
-                ],
-            ], 'Payment recorded successfully', 201);
+            // Load relations for response
+            $payment->load([
+                'invoiceItem.student',
+                'invoiceItem.feeCategory',
+                'invoiceItem.academicYear',
+                'processedBy'
+            ]);
+
+            return ApiResponse::success($payment, 'Payment recorded successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::error('Failed to record payment: ' . $e->getMessage(), 500);
