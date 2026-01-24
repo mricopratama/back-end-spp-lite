@@ -30,17 +30,7 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         try {
-            $user = Auth::user();
-
             $query = Student::query();
-
-            // If user is student, only return their own data
-            if ($user->role->name === 'student') {
-                if (!$user->student_id) {
-                    return ApiResponse::error('Student record not found', 404);
-                }
-                $query->where('id', $user->student_id);
-            }
 
             // Optimize: Only load relationships if needed
             $with = ['currentClass'];
@@ -152,14 +142,6 @@ class StudentController extends Controller
             ]);
 
             $query = Student::query();
-
-            // If user is student, only return their own data
-            if ($user->role->name === 'student') {
-                if (!$user->student_id) {
-                    return ApiResponse::error('Student record not found', 404);
-                }
-                $query->where('id', $user->student_id);
-            }
 
             // Load relationships
             $query->with(['currentClassHistory.class', 'currentClassHistory.academicYear']);
@@ -417,15 +399,6 @@ class StudentController extends Controller
     public function show($id)
     {
         try {
-            $user = Auth::user();
-
-            // If user is student, only allow access to their own data
-            if ($user->role->name === 'student') {
-                if ($user->student_id != $id) {
-                    return ApiResponse::error('Forbidden: You can only access your own data', 403);
-                }
-            }
-
             $student = Student::with([
                 'classHistory.academicYear',
                 'classHistory.class',
@@ -1379,8 +1352,9 @@ class StudentController extends Controller
 
     /**
      * Generate username from full name and academic year
-     * Example: "Muhammad Faiz Rizqi" + "2025/2026" = "muhammadfaizrizqi25"
-     * Example: "Masyitoh" + "2025/2026" = "masyitoh25"
+     * Maximum 20 characters for student account
+     * Example: "Muhammad Faiz Rizqi" + "2025/2026" = "muhammadfaizrizqi25" (20 chars)
+     * Example: "Masyitoh" + "2025/2026" = "masyitoh25" (10 chars)
      */
     private function generateUsername($fullName, $academicYear = null)
     {
@@ -1392,17 +1366,26 @@ class StudentController extends Controller
         $namePart = str_replace(' ', '', $cleanName);
 
         // Add year suffix (last 2 digits of first year)
+        $yearSuffix = '';
         if ($academicYear) {
             // Extract first year from format like "2025/2026" or "2025-2026"
             preg_match('/\d{4}/', $academicYear, $matches);
             if (!empty($matches)) {
                 $year = $matches[0];
                 $yearSuffix = substr($year, -2); // Get last 2 digits
-                $namePart .= $yearSuffix;
             }
         }
 
-        return $namePart;
+        // Limit to 20 characters total
+        $maxLength = 20;
+        $availableForName = $maxLength - strlen($yearSuffix);
+
+        // Truncate name if needed
+        if (strlen($namePart) > $availableForName) {
+            $namePart = substr($namePart, 0, $availableForName);
+        }
+
+        return $namePart . $yearSuffix;
     }
 
     /**
@@ -1412,15 +1395,6 @@ class StudentController extends Controller
     public function sppCard($id, Request $request)
     {
         try {
-            $user = Auth::user();
-
-            // If user is student, only allow access to their own SPP card
-            if ($user->role->name === 'student') {
-                if ($user->student_id != $id) {
-                    return ApiResponse::error('Forbidden: You can only access your own SPP card', 403);
-                }
-            }
-
             $student = Student::with(['currentClass', 'user'])->findOrFail($id);
 
             // Get academic year (default to active one if not specified)

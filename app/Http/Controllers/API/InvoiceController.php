@@ -27,12 +27,6 @@ class InvoiceController extends Controller
         try {
             $user = Auth::user();
             $query = InvoiceItem::with(['student', 'academicYear', 'feeCategory']);
-            if ($user->role->name === 'student') {
-                if (!$user->student_id) {
-                    return ApiResponse::error('Student record not found', 404);
-                }
-                $query->where('student_id', $user->student_id);
-            }
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
@@ -46,12 +40,6 @@ class InvoiceController extends Controller
             }
             if ($request->has('academic_year_id')) {
                 $query->where('academic_year_id', $request->academic_year_id);
-            }
-            if ($request->has('due_date_from')) {
-                $query->where('created_at', '>=', $request->due_date_from);
-            }
-            if ($request->has('due_date_to')) {
-                $query->where('created_at', '<=', $request->due_date_to);
             }
             if ($request->has('search')) {
                 $search = $request->search;
@@ -175,14 +163,7 @@ class InvoiceController extends Controller
         if (!$invoiceItem) {
             return ApiResponse::error('Invoice item not found', 404);
         }
-        $user = Auth::user();
-        if ($user->role->name === 'student' && $invoiceItem->student_id != $user->student_id) {
-            return ApiResponse::error('Forbidden: You can only access your own invoice items', 403);
-        }
         $student = $invoiceItem->student;
-        $dueDate = $invoiceItem->due_date
-            ? $invoiceItem->due_date->format('Y-m-d')
-            : ($invoiceItem->created_at ? $invoiceItem->created_at->format('Y-m-d') : null);
         return ApiResponse::success([
             'id' => $invoiceItem->id,
             'invoice_number' => $invoiceItem->invoice_number,
@@ -193,7 +174,6 @@ class InvoiceController extends Controller
             'amount' => $invoiceItem->amount,
             'paid_amount' => $invoiceItem->paid_amount,
             'remaining_amount' => $invoiceItem->amount - $invoiceItem->paid_amount,
-            'due_date' => $dueDate,
             'fee_category' => $invoiceItem->feeCategory->name ?? '',
             'payments' => $invoiceItem->payments->map(function ($payment) {
                 return [
@@ -240,7 +220,9 @@ class InvoiceController extends Controller
             }
 
             $perPage = $request->get('per_page', 15);
-            $invoices = $query->orderBy('due_date', 'desc')->paginate($perPage);
+            $invoices = $query->orderBy('period_month', 'desc')
+                              ->orderBy('id', 'desc')
+                              ->paginate($perPage);
 
             // Dynamic message based on role
             $message = 'My invoice items fetched';
@@ -701,7 +683,6 @@ class InvoiceController extends Controller
                     'student_id' => $studentId,
                     'academic_year_id' => $validated['academic_year_id'],
                     'period_month' => $validated['period_month'],
-                    'period_year' => $validated['period_year'],
                     'status' => 'unpaid',
                     'fee_category_id' => $sppCategory->id
                 ])->exists();
@@ -726,9 +707,6 @@ class InvoiceController extends Controller
                     'paid_amount' => 0,
                     'status' => 'unpaid',
                     'period_month' => $validated['period_month'],
-                    'period_year' => $validated['period_year'],
-                    'due_date' => $validated['due_date'],
-                    'description' => "SPP Bulan {$monthName} {$validated['period_year']}",
                 ]);
 
                 $created++;
@@ -738,8 +716,7 @@ class InvoiceController extends Controller
                     'student_nis' => $student->nis,
                     'invoice_number' => $invoiceItem->invoice_number,
                     'amount' => $amount,
-                    'period' => "{$monthName} {$validated['period_year']}",
-                    'due_date' => $validated['due_date'],
+                    'period_month' => $validated['period_month'],
                 ];
             }
 
@@ -750,7 +727,7 @@ class InvoiceController extends Controller
                 'skipped' => $skipped,
                 'total_students' => count($studentIds),
                 'total_amount' => array_sum(array_column($details, 'amount')),
-                'period' => $this->getIndonesianMonthName($validated['period_month']) . ' ' . $validated['period_year'],
+                'period_month' => $validated['period_month'],
                 'details' => $details,
             ], "Successfully generated {$created} monthly SPP invoices");
 
@@ -785,8 +762,6 @@ class InvoiceController extends Controller
             $invoices = InvoiceItem::where([
                 'student_id' => $studentId,
                 'academic_year_id' => $validated['academic_year_id'],
-                'period_month' => $validated['period_month'] ?? null,
-                'period_year' => $validated['period_year'] ?? null,
                 'fee_category_id' => $sppCategory->id
             ])->get();
 
@@ -839,7 +814,6 @@ class InvoiceController extends Controller
                 'months' => 'required|array',
                 'months.*.month' => 'required|integer|min:1|max:12',
                 'months.*.year' => 'required|integer|min:2024|max:2030',
-                'months.*.due_date' => 'required|date',
             ]);
 
             $student = Student::findOrFail($validated['student_id']);
@@ -858,7 +832,6 @@ class InvoiceController extends Controller
                     'student_id' => $validated['student_id'],
                     'academic_year_id' => $validated['academic_year_id'],
                     'period_month' => $monthData['month'],
-                    'period_year' => $monthData['year'],
                     'fee_category_id' => $sppCategory->id
                 ])->exists();
 
@@ -878,15 +851,12 @@ class InvoiceController extends Controller
                     'paid_amount' => 0,
                     'status' => 'unpaid',
                     'period_month' => $monthData['month'],
-                    'period_year' => $monthData['year'],
-                    'due_date' => $monthData['due_date'],
-                    'description' => "SPP Bulan {$monthName} {$monthData['year']}",
                 ]);
 
                 $created++;
                 $details[] = [
                     'invoice_number' => $invoiceItem->invoice_number,
-                    'period' => "{$monthName} {$monthData['year']}",
+                    'period_month' => $monthData['month'],
                     'amount' => $amount,
                 ];
             }
@@ -947,7 +917,6 @@ class InvoiceController extends Controller
     private function buildMonthData($student, $invoices, $month, $year, $academicYearId)
     {
         $invoice = $invoices->where('period_month', $month)
-                    ->where('period_year', $year)
                     ->first();
 
         $monthName = $this->getIndonesianMonthName($month);
@@ -971,18 +940,11 @@ class InvoiceController extends Controller
             'period' => "{$monthName} {$year}",
             'invoice_id' => $invoice->id,
             'invoice_number' => $invoice->invoice_number,
-            'total_amount' => $invoice->total_amount,
+            'total_amount' => $invoice->amount,
             'paid_amount' => $invoice->paid_amount,
-            'remaining_amount' => $invoice->total_amount - $invoice->paid_amount,
+            'remaining_amount' => $invoice->amount - $invoice->paid_amount,
             'status' => $invoice->status,
-            'due_date' => $invoice->due_date->format('Y-m-d'),
         ];
-
-        // Add overdue info if unpaid/partial
-        if ($invoice->isOverdue()) {
-            $data['overdue'] = true;
-            $data['overdue_days'] = $invoice->overdue_days;
-        }
 
         // Add payment date if paid
         if ($invoice->status === 'paid') {

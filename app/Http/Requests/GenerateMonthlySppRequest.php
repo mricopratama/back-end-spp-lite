@@ -21,8 +21,6 @@ class GenerateMonthlySppRequest extends FormRequest
             'student_ids' => 'required_without:class_id|array',
             'student_ids.*' => 'exists:students,id',
             'period_month' => 'required|integer|min:1|max:12',
-            'period_year' => 'required|integer|min:2024|max:2030',
-            'due_date' => 'required|date',
         ];
     }
 
@@ -34,9 +32,6 @@ class GenerateMonthlySppRequest extends FormRequest
             'period_month.required' => 'Bulan periode harus diisi',
             'period_month.min' => 'Bulan harus antara 1-12',
             'period_month.max' => 'Bulan harus antara 1-12',
-            'period_year.required' => 'Tahun periode harus diisi',
-            'due_date.required' => 'Tanggal jatuh tempo harus diisi',
-            'due_date.date' => 'Format tanggal tidak valid',
         ];
     }
 

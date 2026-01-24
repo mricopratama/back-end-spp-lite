@@ -47,53 +47,65 @@ Route::middleware(['auth.token'])->group(function () {
 
     // Student routes
     Route::prefix('students')->group(function () {
-        Route::get('/', [StudentController::class, 'index']); // List students
-        Route::get('/paginate', [StudentController::class, 'paginate']); // Paginated students with filters & search
-        Route::post('/', [StudentController::class, 'store'])->middleware('role:admin'); // Create student
-        Route::get('/{student}', [StudentController::class, 'show']); // Show student detail
-        Route::put('/{student}', [StudentController::class, 'update'])->middleware('role:admin'); // Update student
-        Route::delete('/{student}', [StudentController::class, 'destroy'])->middleware('role:admin'); // Delete student
-
-        // Student specific actions (Admin only)
-        Route::post('/set-class', [StudentController::class, 'setClass'])->middleware('role:admin');
-        Route::get('/bulk-promote/preview', [StudentController::class, 'bulkPromotePreview'])->middleware('role:admin');
-        Route::post('/bulk-promote/auto', [StudentController::class, 'bulkPromoteAuto'])->middleware('role:admin');
-        Route::post('/bulk-promote', [StudentController::class, 'bulkPromote'])->middleware('role:admin');
-        Route::post('/{student}/create-user', [StudentController::class, 'createUserAccount'])->middleware('role:admin');
-        Route::post('/import', [StudentController::class, 'import'])->middleware('role:admin');
-
-        // SPP Card (Kartu SPP Digital)
-        Route::get('/{student}/spp-card', [StudentController::class, 'sppCard']); // SPP card for specific student
+        // Student-only endpoints (must be first)
         Route::get('/my/spp-card', [StudentController::class, 'mySppCard']); // My SPP card (Wali Murid)
+
+        // Admin-only endpoints
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/', [StudentController::class, 'index']); // List students
+            Route::get('/paginate', [StudentController::class, 'paginate']); // Paginated students with filters & search
+            Route::post('/', [StudentController::class, 'store']); // Create student
+            Route::get('/{student}', [StudentController::class, 'show']); // Show student detail
+            Route::put('/{student}', [StudentController::class, 'update']); // Update student
+            Route::delete('/{student}', [StudentController::class, 'destroy']); // Delete student
+            Route::get('/{student}/spp-card', [StudentController::class, 'sppCard']); // SPP card for specific student
+
+            // Student specific actions
+            Route::post('/set-class', [StudentController::class, 'setClass']);
+            Route::get('/bulk-promote/preview', [StudentController::class, 'bulkPromotePreview']);
+            Route::post('/bulk-promote/auto', [StudentController::class, 'bulkPromoteAuto']);
+            Route::post('/bulk-promote', [StudentController::class, 'bulkPromote']);
+            Route::post('/{student}/create-user', [StudentController::class, 'createUserAccount']);
+            Route::post('/import', [StudentController::class, 'import']);
+        });
     });
 
     // Invoice routes
     Route::prefix('invoices')->group(function () {
-        Route::get('/', [InvoiceController::class, 'index']); // List invoices
-        Route::post('/', [InvoiceController::class, 'store'])->middleware('role:admin'); // Create single invoice
-        Route::post('/bulk', [InvoiceController::class, 'bulkStore'])->middleware('role:admin'); // Create bulk invoices
+        // Student-only endpoints (must be first)
+        Route::get('/my', [InvoiceController::class, 'myInvoices'])->middleware('student.access'); // Student: my invoices
 
-        // Monthly SPP Generation (NEW)
-        Route::post('/generate-monthly-spp', [InvoiceController::class, 'generateMonthlySpp'])->middleware('role:admin');
-        Route::post('/generate-missing-months', [InvoiceController::class, 'generateMissingMonths'])->middleware('role:admin');
-        Route::get('/monthly-status/{studentId}', [InvoiceController::class, 'getMonthlyPaymentStatus']);
+        // Admin-only endpoints
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/', [InvoiceController::class, 'index']); // List invoices
+            Route::post('/', [InvoiceController::class, 'store']); // Create single invoice
+            Route::post('/bulk', [InvoiceController::class, 'bulkStore']); // Create bulk invoices
+            Route::get('/{invoice}', [InvoiceController::class, 'show']); // Show invoice detail
+            Route::delete('/{invoice}', [InvoiceController::class, 'destroy']); // Delete invoice
+            Route::post('/import', [InvoiceController::class, 'import']); // Import from Excel
 
-        Route::post('/import', [InvoiceController::class, 'import'])->middleware('role:admin'); // Import from Excel
-        Route::get('/my', [InvoiceController::class, 'myInvoices'])->middleware('student.access'); // Student: my invoices (MUST be before /{invoice})
-        Route::get('/{invoice}', [InvoiceController::class, 'show']); // Show invoice detail
-        Route::delete('/{invoice}', [InvoiceController::class, 'destroy'])->middleware('role:admin'); // Delete invoice
+            // Monthly SPP Generation
+            Route::post('/generate-monthly-spp', [InvoiceController::class, 'generateMonthlySpp']);
+            Route::post('/generate-missing-months', [InvoiceController::class, 'generateMissingMonths']);
+            Route::get('/monthly-status/{studentId}', [InvoiceController::class, 'getMonthlyPaymentStatus']);
+        });
     });
 
     // Payment routes
     Route::prefix('payments')->group(function () {
-        Route::get('/', [PaymentController::class, 'index']); // List payments
-        Route::post('/', [PaymentController::class, 'store'])->middleware('role:admin'); // Record payment (Admin only)
-        Route::get('/history', [PaymentController::class, 'paymentHistory']); // Payment history with date range
+        // Student-only endpoints (must be first)
         Route::get('/my', [PaymentController::class, 'myPayments']); // Student: my payment history
-        Route::get('/student/{studentId}', [PaymentController::class, 'studentHistory']); // Payment history by student
-        Route::get('/{payment}', [PaymentController::class, 'show']); // Show payment detail
-        Route::get('/{payment}/print', [PaymentController::class, 'printReceipt']); // Print receipt
-        Route::delete('/{payment}', [PaymentController::class, 'destroy'])->middleware('role:admin'); // Delete payment (Admin only)
+
+        // Admin-only endpoints
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/', [PaymentController::class, 'index']); // List payments
+            Route::post('/', [PaymentController::class, 'store']); // Record payment
+            Route::get('/history', [PaymentController::class, 'paymentHistory']); // Payment history with date range
+            Route::get('/student/{studentId}', [PaymentController::class, 'studentHistory']); // Payment history by student
+            Route::get('/{payment}', [PaymentController::class, 'show']); // Show payment detail
+            Route::get('/{payment}/print', [PaymentController::class, 'printReceipt']); // Print receipt
+            Route::delete('/{payment}', [PaymentController::class, 'destroy']); // Delete payment
+        });
     });
 
     // Notification routes

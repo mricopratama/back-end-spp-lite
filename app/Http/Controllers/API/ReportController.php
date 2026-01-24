@@ -67,11 +67,11 @@ class ReportController extends Controller
                 $arrearsData[$studentId]['details'][] = [
                     'invoice_item_id' => $item->id,
                     'fee_category' => $item->feeCategory->name,
-                    'description' => $item->description,
+                    'period_month' => $item->period_month,
                     'amount' => $item->amount,
                     'paid_amount' => $item->paid_amount,
                     'remaining_amount' => $remainingAmount,
-                    'due_date' => $item->due_date,
+                    'created_at' => $item->created_at,
                     'status' => $item->status,
                 ];
             }
@@ -277,7 +277,7 @@ class ReportController extends Controller
                 $totalPaid = $invoiceItems->sum('paid_amount');
                 $totalOutstanding = $totalExpected - $totalPaid;
                 $paidCount = $invoiceItems->where('status', 'PAID')->count();
-                $unpaidCount = $invoiceItems->where('status', 'UNPAID')->count();
+                $unpaidCount = $invoiceItems->where('status', 'unpaid')->count();
                 $partialCount = $invoiceItems->where('status', 'PARTIAL')->count();
                 $result[] = [
                     'class_id' => $class->id,

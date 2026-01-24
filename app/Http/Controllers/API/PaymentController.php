@@ -30,21 +30,11 @@ class PaymentController extends Controller
 
             // Eager load relationships to prevent N+1
                 $query->with([
-                    'invoiceItem:id,invoice_number,student_id,academic_year_id,total_amount,paid_amount,status',
+                    'invoiceItem:id,invoice_number,student_id,academic_year_id,amount,paid_amount,status',
                     'invoiceItem.student:id,nis,full_name',
                     'invoiceItem.academicYear:id,name',
                     'processedBy:id,full_name'
                 ]);
-
-            // If user is student, only return their own payments
-            if ($user->role->name === 'student') {
-                if (!$user->student_id) {
-                    return ApiResponse::error('Student record not found', 404);
-                }
-                $query->whereHas('invoiceItem', function ($q) use ($user) {
-                    $q->where('student_id', $user->student_id);
-                });
-            }
 
             // Filter by payment method
             if ($request->has('payment_method')) {
@@ -212,21 +202,12 @@ class PaymentController extends Controller
     public function show($id)
     {
         try {
-            $user = Auth::user();
-
             $payment = Payment::with([
                 'invoiceItem.student',
                 'invoiceItem.academicYear',
                 'invoiceItem.feeCategory',
                 'processedBy'
             ])->findOrFail($id);
-
-            // If user is student, only allow access to their own payments
-            if ($user->role->name === 'student') {
-                if ($payment->invoiceItem->student_id != $user->student_id) {
-                    return ApiResponse::error('Forbidden: You can only access your own payments', 403);
-                }
-            }
 
             return ApiResponse::success($payment, 'Payment detail fetched');
         } catch (\Exception $e) {
@@ -240,15 +221,6 @@ class PaymentController extends Controller
     public function studentHistory(Request $request, $studentId)
     {
         try {
-            $user = Auth::user();
-
-            // If user is student, only allow access to their own payment history
-            if ($user->role->name === 'student') {
-                if ($user->student_id != $studentId) {
-                    return ApiResponse::error('Forbidden: You can only access your own payment history', 403);
-                }
-            }
-
             $query = Payment::with(['invoiceItem.student', 'invoiceItem.feeCategory', 'processedBy'])
                 ->whereHas('invoiceItem', function ($q) use ($studentId) {
                     $q->where('student_id', $studentId);

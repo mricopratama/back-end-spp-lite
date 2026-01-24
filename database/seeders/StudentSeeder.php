@@ -781,8 +781,9 @@ class StudentSeeder extends Seeder
 
     /**
      * Generate username from full name and academic year
-     * Example: "Muhammad Faiz Rizqi" + "2025/2026" = "muhammadfaizrizqi25"
-     * Example: "Masyitoh" + "2025/2026" = "masyitoh25"
+     * Maximum 20 characters for student account
+     * Example: "Muhammad Faiz Rizqi" + "2025/2026" = "muhammadfaizrizqi25" (20 chars)
+     * Example: "Masyitoh" + "2025/2026" = "masyitoh25" (10 chars)
      */
     private function generateUsername($fullName, $academicYear = null)
     {
@@ -794,16 +795,25 @@ class StudentSeeder extends Seeder
         $namePart = str_replace(' ', '', $cleanName);
 
         // Add year suffix (last 2 digits of first year)
+        $yearSuffix = '';
         if ($academicYear) {
             // Extract first year from format like "2025/2026" or "2025-2026"
             preg_match('/\d{4}/', $academicYear, $matches);
             if (!empty($matches)) {
                 $year = $matches[0];
                 $yearSuffix = substr($year, -2); // Get last 2 digits
-                $namePart .= $yearSuffix;
             }
         }
 
-        return $namePart;
+        // Limit to 20 characters total
+        $maxLength = 20;
+        $availableForName = $maxLength - strlen($yearSuffix);
+
+        // Truncate name if needed
+        if (strlen($namePart) > $availableForName) {
+            $namePart = substr($namePart, 0, $availableForName);
+        }
+
+        return $namePart . $yearSuffix;
     }
 }
