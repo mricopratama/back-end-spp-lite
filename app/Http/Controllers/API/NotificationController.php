@@ -39,10 +39,15 @@ class NotificationController extends Controller
                 ->where('is_read', false)
                 ->count();
 
-            return ApiResponse::success([
-                'notifications' => $notifications,
-                'unread_count' => $unreadCount,
-            ], 'Notifications fetched successfully');
+            $filters = [
+                'type' => $request->get('type'),
+                'is_read' => $request->get('is_read'),
+            ];
+
+            $result = ApiResponse::formatPagination($notifications, $filters);
+            $result['unread_count'] = $unreadCount;
+
+            return ApiResponse::success($result, 'Notifications fetched successfully');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch notifications: ' . $e->getMessage(), 500);
         }

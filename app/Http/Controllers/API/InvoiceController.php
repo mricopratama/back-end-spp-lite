@@ -52,7 +52,46 @@ class InvoiceController extends Controller
             }
             $perPage = $request->get('per_page', 15);
             $invoices = $query->orderBy('created_at', 'desc')->paginate($perPage);
-            return ApiResponse::success($invoices, 'List of invoices');
+
+            // Format the response data
+            $formattedInvoices = $invoices->getCollection()->map(function ($invoice) {
+                $monthNames = [
+                    1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+                    4 => 'April', 5 => 'Mei', 6 => 'Juni',
+                    7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+                    10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                ];
+
+                $monthName = $monthNames[$invoice->period_month] ?? '';
+                $year = $invoice->academicYear?->name ?? date('Y');
+
+                // Extract year from academic year format (e.g., "2024/2025" -> "2024")
+                if (strpos($year, '/') !== false) {
+                    $year = explode('/', $year)[0];
+                }
+
+                return [
+                    'id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'title' => $invoice->feeCategory?->name . ' ' . $monthName . ' ' . $year,
+                    'amount' => (float) $invoice->amount,
+                    'paid_amount' => (float) $invoice->paid_amount,
+                    'status' => $invoice->status,
+                ];
+            });
+
+            $invoices->setCollection($formattedInvoices);
+
+            $filters = [
+                'status' => $request->get('status'),
+                'student_id' => $request->get('student_id'),
+                'nis' => $request->get('nis'),
+                'academic_year_id' => $request->get('academic_year_id'),
+                'search' => $request->get('search'),
+            ];
+
+            $result = ApiResponse::formatPagination($invoices, $filters);
+            return ApiResponse::success($result, 'List of invoices');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch invoices: ' . $e->getMessage(), 500);
         }
@@ -233,7 +272,42 @@ class InvoiceController extends Controller
                 }
             }
 
-            return ApiResponse::success($invoices, $message);
+            // Format the response data
+            $formattedInvoices = $invoices->getCollection()->map(function ($invoice) {
+                $monthNames = [
+                    1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+                    4 => 'April', 5 => 'Mei', 6 => 'Juni',
+                    7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+                    10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                ];
+
+                $monthName = $monthNames[$invoice->period_month] ?? '';
+                $year = $invoice->academicYear?->name ?? date('Y');
+
+                // Extract year from academic year format (e.g., "2024/2025" -> "2024")
+                if (strpos($year, '/') !== false) {
+                    $year = explode('/', $year)[0];
+                }
+
+                return [
+                    'id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'title' => $invoice->feeCategory?->name . ' ' . $monthName . ' ' . $year,
+                    'amount' => (float) $invoice->amount,
+                    'paid_amount' => (float) $invoice->paid_amount,
+                    'status' => $invoice->status,
+                ];
+            });
+
+            $invoices->setCollection($formattedInvoices);
+
+            $filters = [
+                'nis' => $request->get('nis'),
+                'status' => $request->get('status'),
+            ];
+
+            $result = ApiResponse::formatPagination($invoices, $filters);
+            return ApiResponse::success($result, $message);
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch invoice items: ' . $e->getMessage(), 500);
         }

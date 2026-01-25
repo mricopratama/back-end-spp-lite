@@ -333,7 +333,16 @@ class ReportController extends Controller
                 });
             }
             $payments = $query->orderBy('payment_date', 'desc')->paginate(20);
-            return ApiResponse::success($payments, 'Payment history fetched');
+
+            $filters = [
+                'start_date' => $request->get('start_date'),
+                'end_date' => $request->get('end_date'),
+                'payment_method' => $request->get('payment_method'),
+                'student_id' => $request->get('student_id'),
+            ];
+
+            $result = ApiResponse::formatPagination($payments, $filters);
+            return ApiResponse::success($result, 'Payment history fetched');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch payment history: ' . $e->getMessage(), 500);
         }

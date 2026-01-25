@@ -39,4 +39,27 @@ class ApiResponse
             'data' => $errors,
         ], $code);
     }
+
+    /**
+     * Format pagination response dengan struktur standar
+     *
+     * @param  \Illuminate\Pagination\LengthAwarePaginator  $paginator
+     * @param  array  $filters
+     * @return array
+     */
+    public static function formatPagination($paginator, array $filters = [])
+    {
+        return [
+            'data' => $paginator->items(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+                'filters' => $filters,
+            ],
+        ];
+    }
 }

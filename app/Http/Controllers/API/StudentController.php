@@ -101,7 +101,17 @@ class StudentController extends Controller
             $perPage = $request->get('per_page', 15);
             $students = $query->paginate($perPage);
 
-            return ApiResponse::success($students, 'List of students');
+            $filters = [
+                'academic_year_id' => $request->get('academic_year_id'),
+                'class_id' => $request->get('class_id'),
+                'status' => $request->get('status'),
+                'search' => $request->get('search'),
+                'nis' => $request->get('nis'),
+                'name' => $request->get('name'),
+            ];
+
+            $result = ApiResponse::formatPagination($students, $filters);
+            return ApiResponse::success($result, 'List of students');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch students: ' . $e->getMessage(), 500);
         }

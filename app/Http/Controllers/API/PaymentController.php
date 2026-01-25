@@ -109,7 +109,19 @@ class PaymentController extends Controller
             $perPage = $request->get('per_page', 15);
             $payments = $query->paginate($perPage);
 
-            return ApiResponse::success($payments, 'List of payments');
+            $filters = [
+                'invoice_item_id' => $request->get('invoice_item_id'),
+                'student_id' => $request->get('student_id'),
+                'academic_year_id' => $request->get('academic_year_id'),
+                'payment_method' => $request->get('payment_method'),
+                'date_from' => $request->get('date_from'),
+                'date_to' => $request->get('date_to'),
+                'processed_by' => $request->get('processed_by'),
+                'search' => $request->get('search'),
+            ];
+
+            $result = ApiResponse::formatPagination($payments, $filters);
+            return ApiResponse::success($result, 'List of payments');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch payments: ' . $e->getMessage(), 500);
         }
@@ -241,13 +253,19 @@ class PaymentController extends Controller
                 $q->where('student_id', $studentId);
             })->sum('amount');
 
-            return ApiResponse::success([
-                'summary' => [
-                    'total_paid' => (float) $totalPaid,
-                    'payment_count' => $payments->total(),
-                ],
-                'payments' => $payments,
-            ], 'Payment history fetched');
+            $filters = [
+                'date_from' => $request->get('date_from'),
+                'date_to' => $request->get('date_to'),
+                'academic_year_id' => $request->get('academic_year_id'),
+            ];
+
+            $result = ApiResponse::formatPagination($payments, $filters);
+            $result['summary'] = [
+                'total_paid' => (float) $totalPaid,
+                'payment_count' => $payments->total(),
+            ];
+
+            return ApiResponse::success($result, 'Payment history fetched');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch payment history: ' . $e->getMessage(), 500);
         }
@@ -324,13 +342,21 @@ class PaymentController extends Controller
                 })
                 ->sum('amount');
 
-            return ApiResponse::success([
-                'payments' => $payments,
-                'summary' => [
-                    'total_payments' => $payments->total(),
-                    'total_amount' => $totalAmount,
-                ],
-            ], 'Payment history');
+            $filters = [
+                'start_date' => $request->get('start_date'),
+                'end_date' => $request->get('end_date'),
+                'payment_method' => $request->get('payment_method'),
+                'student_id' => $request->get('student_id'),
+                'academic_year_id' => $request->get('academic_year_id'),
+            ];
+
+            $result = ApiResponse::formatPagination($payments, $filters);
+            $result['summary'] = [
+                'total_payments' => $payments->total(),
+                'total_amount' => $totalAmount,
+            ];
+
+            return ApiResponse::success($result, 'Payment history');
         } catch (\Exception $e) {
             return ApiResponse::error('Failed to fetch payment history: ' . $e->getMessage(), 500);
         }
