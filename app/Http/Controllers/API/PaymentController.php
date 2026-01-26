@@ -160,7 +160,7 @@ class PaymentController extends Controller
             $payment = Payment::create([
                 'receipt_number' => $receiptNumber,
                 'amount' => $paymentAmount,
-                'payment_date' => $validated['payment_date'],
+                'payment_date' => now()->format('Y-m-d'),
                 'payment_method' => $validated['payment_method'],
                 'notes' => $validated['notes'] ?? null,
                 'invoice_item_id' => $invoiceItem->id,

@@ -3328,7 +3328,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"invoice_item_id\": {{saved_invoice_id}},\n    \"amount\": 200000,\n    \"payment_method\": \"CASH\",\n    \"notes\": \"Titipan via Wali Kelas\",\n    \"payment_date\": \"2025-12-31\"\n}",
+							"raw": "{\n    \"invoice_item_id\": {{saved_invoice_id}},\n    \"amount\": 200000,\n    \"payment_method\": \"CASH\",\n    \"notes\": \"Titipan via Wali Kelas\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
