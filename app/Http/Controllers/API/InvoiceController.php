@@ -109,6 +109,7 @@ class InvoiceController extends Controller
             $student = Student::findOrFail($validated['student_id']);
             $feeCategory = FeeCategory::findOrFail($validated['fee_category_id']);
             $amount = $validated['amount'] ?? $feeCategory->default_amount;
+            $periodMonth = $feeCategory->type === 'spp' ? $validated['period_month'] : null;
             $invoiceItem = InvoiceItem::create([
                 'invoice_number' => $invoiceNumber,
                 'student_id' => $validated['student_id'],
@@ -117,7 +118,7 @@ class InvoiceController extends Controller
                 'amount' => $amount,
                 'paid_amount' => 0,
                 'status' => 'unpaid',
-                'period_month' => $validated['period_month'],
+                'period_month' => $periodMonth,
             ]);
             DB::commit();
 
@@ -153,19 +154,19 @@ class InvoiceController extends Controller
             }
             $created = 0;
             $skipped = 0;
+            $feeCategory = FeeCategory::findOrFail($validated['fee_category_id']);
             foreach ($studentIds as $studentId) {
-                // Cek jika sudah ada invoice item untuk fee_category, tahun ajaran, dan periode yang sama
+                $periodMonth = $feeCategory->type === 'spp' ? $validated['period_month'] : null;
                 $exists = InvoiceItem::where([
                     'student_id' => $studentId,
                     'academic_year_id' => $validated['academic_year_id'],
                     'fee_category_id' => $validated['fee_category_id'],
-                    'period_month' => $validated['period_month'],
+                    'period_month' => $periodMonth,
                 ])->exists();
                 if ($exists) {
                     $skipped++;
                     continue;
                 }
-                $feeCategory = FeeCategory::findOrFail($validated['fee_category_id']);
                 $amount = $validated['amount'] ?? $feeCategory->default_amount;
                 InvoiceItem::create([
                     'invoice_number' => $this->generateInvoiceNumber(),
@@ -175,7 +176,7 @@ class InvoiceController extends Controller
                     'amount' => $amount,
                     'paid_amount' => 0,
                     'status' => 'unpaid',
-                    'period_month' => $validated['period_month'],
+                    'period_month' => $periodMonth,
                 ]);
                 $created++;
             }
@@ -401,6 +402,9 @@ class InvoiceController extends Controller
                     $periodMonth = $columnMapping['month']
                         ? trim($worksheet->getCell($columnMapping['month'] . $row)->getValue() ?? '')
                         : null;
+                    $academicYearText = $columnMapping['academic_year']
+                        ? trim($worksheet->getCell($columnMapping['academic_year'] . $row)->getValue() ?? '')
+                        : null;
 
                     // Skip empty rows
                     if (empty($nis) && empty($feeCategoryName) && empty($amount)) {
@@ -428,29 +432,37 @@ class InvoiceController extends Controller
 
                     // Parse period month (1-12)
                     $monthNumber = null;
-                    if (!empty($periodMonth)) {
-                        // Try to convert month name to number
-                        $monthNames = [
-                            'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
-                            'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
-                            'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
-                            'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
-                            'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
-                            'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12,
-                        ];
-
-                        $monthLower = strtolower(trim($periodMonth));
-                        if (isset($monthNames[$monthLower])) {
-                            $monthNumber = $monthNames[$monthLower];
-                        } elseif (is_numeric($periodMonth) && $periodMonth >= 1 && $periodMonth <= 12) {
-                            $monthNumber = (int) $periodMonth;
-                        }
-                    }
-
-                    if (!$monthNumber) {
-                        $errors[] = "Row {$row}: Bulan tidak valid (gunakan nama bulan atau angka 1-12)";
+                    // Find fee category by name (fuzzy match)
+                    $feeCategory = FeeCategory::where('name', 'like', "%{$feeCategoryName}%")->first();
+                    if (!$feeCategory) {
+                        $errors[] = "Row {$row}: Fee category '{$feeCategoryName}' tidak ditemukan";
                         $failed++;
                         continue;
+                    }
+
+                    if ($feeCategory->type === 'spp') {
+                        if (!empty($periodMonth)) {
+                            // Try to convert month name to number
+                            $monthNames = [
+                                'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4,
+                                'mei' => 5, 'juni' => 6, 'juli' => 7, 'agustus' => 8,
+                                'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12,
+                                'january' => 1, 'february' => 2, 'march' => 3, 'april' => 4,
+                                'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8,
+                                'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12,
+                            ];
+                            $monthLower = strtolower(trim($periodMonth));
+                            if (isset($monthNames[$monthLower])) {
+                                $monthNumber = $monthNames[$monthLower];
+                            } elseif (is_numeric($periodMonth) && $periodMonth >= 1 && $periodMonth <= 12) {
+                                $monthNumber = (int) $periodMonth;
+                            }
+                        }
+                        if (!$monthNumber) {
+                            $errors[] = "Row {$row}: Bulan tidak valid (gunakan nama bulan atau angka 1-12)";
+                            $failed++;
+                            continue;
+                        }
                     }
 
                     // Find student
@@ -461,21 +473,31 @@ class InvoiceController extends Controller
                         continue;
                     }
 
-                    // Find fee category by name (fuzzy match)
-                    $feeCategory = FeeCategory::where('name', 'like', "%{$feeCategoryName}%")->first();
-                    if (!$feeCategory) {
-                        $errors[] = "Row {$row}: Fee category '{$feeCategoryName}' tidak ditemukan";
+                    // Cari academic year id dari kolom, jika ada
+                    $rowAcademicYearId = null;
+                    if (!empty($academicYearText)) {
+                        $academicYear = \App\Models\AcademicYear::where('name', 'like', "%{$academicYearText}%")->first();
+                        if ($academicYear) {
+                            $rowAcademicYearId = $academicYear->id;
+                        }
+                    }
+                    if (!$rowAcademicYearId) {
+                        $rowAcademicYearId = $academicYearId;
+                    }
+                    if (!$rowAcademicYearId) {
+                        $errors[] = "Row {$row}: Tahun ajaran tidak ditemukan";
                         $failed++;
                         continue;
                     }
 
-                    // Group by student + month
-                    $key = $student->id . '_' . $monthNumber;
+                    // Group by student + month + tahun ajar
+                    $key = $student->id . '_' . $monthNumber . '_' . $rowAcademicYearId;
                     if (!isset($groupedData[$key])) {
                         $groupedData[$key] = [
                             'student_id' => $student->id,
                             'student_nis' => $nis,
                             'period_month' => $monthNumber,
+                            'academic_year_id' => $rowAcademicYearId,
                             'items' => [],
                         ];
                     }
@@ -499,7 +521,7 @@ class InvoiceController extends Controller
                         InvoiceItem::create([
                             'invoice_number' => $invoiceNumber,
                             'student_id' => $data['student_id'],
-                            'academic_year_id' => $academicYearId,
+                            'academic_year_id' => $data['academic_year_id'],
                             'fee_category_id' => $item['fee_category_id'],
                             'amount' => $item['amount'],
                             'paid_amount' => 0,
